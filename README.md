@@ -29,6 +29,17 @@ docker compose -f compose.local.yaml down
 
 Do not add `--volumes` to a normal shutdown. See [Docker operations](docs/local-docker.md) for backups, service configuration and troubleshooting.
 
+## Keep a clean SRD library
+
+Campaign 1 remains the clean rules reference. Create an independent working campaign before adding campaign-specific lore:
+
+```bash
+vendor/bin/sail php docker/local/copy-srd.php "My campaign"
+vendor/bin/sail artisan setup:meilisearch --no-interaction
+```
+
+The copy includes custom categories, native child records, properties, feature/spell attachments, relationships, pantheon memberships, tags and sidebar links. Its entry IDs and internal links are remapped. Generic icon files are shared. Keep the worker running to finish search indexing. Source-to-copy mappings stay in ignored `storage/app/campaign-copies/`. Private campaign snapshots and imported lore are not part of this repository.
+
 ## Default services
 
 All ten local runtime services start by default, including mail capture and realtime updates:

@@ -80,3 +80,9 @@ Before publication, compare staged content against actual local credential value
 ## Local premium settings
 
 `/settings/premium` renders a local feature-status view when the local advanced flag is enabled. The hosted allocation page assumes a CampaignBoost exists for a premium campaign; that is not true for local feature grants and previously caused a null-reference HTTP 500. The local view lists the user’s own campaigns and describes external service boundaries without creating subscription or boost records. `LocalPremiumPageTest` exercises the authenticated route with zero allocations.
+
+## Working campaign copies
+
+`LocalCampaignCloneService` and `docker/local/copy-srd.php` create a separate working campaign from the clean SRD base. The CLI requires a new name and campaign 1 with the expected SRD title. Native child IDs, entity IDs, custom category IDs, parent links, attributes, tags, attached abilities, relations, deity memberships and bookmarks are copied/remapped inside a transaction. Generic icon storage paths are reused. The source entity fingerprint is checked and preserved in the private copy mapping. The focused clone test exercises child-ID separation, attached abilities, mention remapping and source preservation. Run search indexing after a copy. This helper is designed for the clean rules library; it is not a general migration of every possible campaign subsystem.
+
+Private online campaign imports are separate operations and must preserve campaign-specific licensing and provenance. Native upstream import mappers need explicit console cache initialization and verification of associated data; for example, the Family mapper omits entity articles. Do not assume a successful mapper run proves content completeness.
