@@ -27,6 +27,11 @@ class PremiumController extends Controller
 
     public function index()
     {
+        if (config('selfhost.advanced_features')) {
+            return view('settings.premium.local')
+                ->with('campaigns', auth()->user()->campaigns()->get());
+        }
+
         if (auth()->user()->hasLegacyBoosterNomenclature()) {
             return redirect()->route('settings.boost');
         }

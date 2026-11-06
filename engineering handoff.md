@@ -76,3 +76,7 @@ Before publication, compare staged content against actual local credential value
 - Add stronger parser/table regression fixtures before regenerating source batches. Current immutable prepared data comes from the official 403-page PDF; it includes normalized layout and shared passages.
 - Rehearse restoring a backup into an isolated project. Public/LAN deployment, TLS, service hardening and immutable app-image packaging are separate engineering tasks.
 - Audit dependency/image updates before changing pinned releases. MinIO is built from source because the previously expected public prebuilt images were unavailable.
+
+## Local premium settings
+
+`/settings/premium` renders a local feature-status view when the local advanced flag is enabled. The hosted allocation page assumes a CampaignBoost exists for a premium campaign; that is not true for local feature grants and previously caused a null-reference HTTP 500. The local view lists the user’s own campaigns and describes external service boundaries without creating subscription or boost records. `LocalPremiumPageTest` exercises the authenticated route with zero allocations.

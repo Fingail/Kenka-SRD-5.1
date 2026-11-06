@@ -56,6 +56,7 @@ Database, Redis and search ports are not published. Published service ports bind
 - Common versus Unique object groups, 14 creature types, 8 spell schools and 15 equipment families.
 - 44 shared free RPG Awesome icons, free Font Awesome navigation fallbacks, and a compact GitHub/licensing footer.
 - Integer queue visibility timeouts for compatibility with Carbon date arithmetic.
+- A local feature-status page at `/settings/premium`, without hosted subscription allocation requirements.
 - Fresh random installation credentials; no personal accounts, hosted API tokens, campaign exports, live database dumps or artwork uploads are published.
 
 The local feature switch does not include paid marketplace content, Font Awesome Pro assets, external subscription services, billing, social logins or Discord setup. The default stack is intended for a single local workstation; public/LAN hosting requires a separate deployment design.

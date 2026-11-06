@@ -47,8 +47,17 @@
             </li>
 
             <li class="section-subscription pt-4">
-                <x-sidebar.section :text="__('settings.menu.subscription')" />
+                <x-sidebar.section :text="config('selfhost.advanced_features') ? __('Local features') : __('settings.menu.subscription')" />
                 <ul class="sidebar-submenu list-none p-0 m-0">
+                    @if (config('selfhost.advanced_features'))
+                        <li class="px-2 {{ $active('premium') }} subsection">
+                            <x-sidebar.element
+                                :url="route('settings.premium')"
+                                icon="fa-solid fa-sliders"
+                                :text="__('Local advanced features')"
+                            ></x-sidebar.element>
+                        </li>
+                    @endif
                     @if (config('services.stripe.enabled'))
                         <li class="px-2 {{ $active('subscription') }} subsection">
                             <x-sidebar.element
