@@ -1,3 +1,6 @@
+@if (config('selfhost.single_host'))
+    @include('layouts.footer-local')
+@else
 <footer class="bg-dark text-light py-12 px-6">
     <div class="mx-auto lg:max-w-7xl flex flex-col gap-10">
         @if(config('tracking.consent'))
@@ -113,3 +116,4 @@
         <div id="ncmp-consent-link"></div>
     </div>
 </footer>
+@endif

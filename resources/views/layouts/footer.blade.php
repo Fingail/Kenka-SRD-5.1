@@ -1,3 +1,6 @@
+@if (config('selfhost.single_host'))
+    @include('layouts.footer-local')
+@else
 <footer id="footer" class="main-footer px-4 py-10 print:hidden">
     <div class="lg:max-w-7xl lg:mx-auto">
         <div class="flex flex-col gap-10">
@@ -128,3 +131,4 @@
         </div>
     </div>
 </footer>
+@endif

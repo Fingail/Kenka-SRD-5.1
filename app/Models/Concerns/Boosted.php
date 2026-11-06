@@ -23,6 +23,10 @@ trait Boosted
      */
     public function boosted(bool $superboosted = false): bool
     {
+        if (config('selfhost.advanced_features')) {
+            return true;
+        }
+
         if (request()->get('_boosted') === '0') {
             return false;
         }
@@ -48,6 +52,10 @@ trait Boosted
      */
     public function premium(): bool
     {
+        if (config('selfhost.advanced_features')) {
+            return true;
+        }
+
         if (request()->get('_boosted') === '0') {
             return false;
         }
@@ -70,6 +78,10 @@ trait Boosted
      */
     public function isElemental(): bool
     {
+        if (config('selfhost.advanced_features')) {
+            return true;
+        }
+
         $boost = $this->boosts->first();
 
         return $boost?->user->isElemental() ?? false;

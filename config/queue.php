@@ -61,7 +61,7 @@ return [
             'driver' => 'redis',
             'connection' => 'default',
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => 90,
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
         ],
 
         // For heavy jobs (no timeout) like map tiling, which can legitimately run for
@@ -72,7 +72,7 @@ return [
             'driver' => 'redis',
             'connection' => 'default',
             'queue' => env('REDIS_HEAVY_QUEUE', 'heavy'),
-            'retry_after' => env('REDIS_HEAVY_QUEUE_RETRY_AFTER', 21600),
+            'retry_after' => (int) env('REDIS_HEAVY_QUEUE_RETRY_AFTER', 21600),
         ],
     ],
 

@@ -1,3 +1,14 @@
 vendor
 bootstrap/cache/*
 **/*.log
+.git
+.env
+.env.*
+node_modules
+storage
+backups
+reports
+*.sql
+*.sql.gz
+*.pem
+*.key

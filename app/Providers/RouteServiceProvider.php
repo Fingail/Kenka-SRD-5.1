@@ -85,9 +85,10 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function api(): self
     {
-        $domain = Domain::isApi() ? Domain::api() : '';
-        $prefix = Domain::isApi() ? null : 'api';
-        $prefixName = Domain::isApi() ? null : 'api.';
+        $singleHost = config('selfhost.single_host');
+        $domain = $singleHost ? null : (Domain::isApi() ? Domain::api() : '');
+        $prefix = $singleHost || ! Domain::isApi() ? 'api' : null;
+        $prefixName = $prefix ? 'api.' : null;
         Route::domain($domain)
             ->prefix($prefix)
             ->namespace($this->namespace)

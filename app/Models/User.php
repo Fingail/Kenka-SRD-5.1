@@ -144,6 +144,10 @@ class User extends \Illuminate\Foundation\Auth\User implements OAuthenticatable
      */
     public function isSubscriber(): bool
     {
+        if (config('selfhost.advanced_features')) {
+            return true;
+        }
+
         return $this->hasRole(Pledge::ROLE) || $this->hasRole('admin') || $this->onTrial();
     }
 
@@ -160,6 +164,10 @@ class User extends \Illuminate\Foundation\Auth\User implements OAuthenticatable
      */
     public function isGoblin(): bool
     {
+        if (config('selfhost.advanced_features')) {
+            return true;
+        }
+
         return ! empty($this->pledge) && $this->pledge !== Pledge::KOBOLD;
     }
 
@@ -168,6 +176,10 @@ class User extends \Illuminate\Foundation\Auth\User implements OAuthenticatable
      */
     public function isElemental(): bool
     {
+        if (config('selfhost.advanced_features')) {
+            return true;
+        }
+
         return (bool) (! empty($this->pledge) && $this->pledge == Pledge::ELEMENTAL);
     }
 

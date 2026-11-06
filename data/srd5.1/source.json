@@ -1,0 +1,14 @@
+{
+  "source": "https://media.dndbeyond.com/compendium-images/srd/5.1/SRD_CC_v5.1.pdf",
+  "edition": "2014 5e / SRD 5.1",
+  "license": "CC BY 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/legalcode",
+  "pdf_sha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
+  "record_count": 1584,
+  "batches": {
+    "remaining-import-batch.json": "7cc851b036cc3d197ae3667330290ca044253c803624a53c796e71ffca62ef43",
+    "import-batch.json": "67576eb01b288cc045b3e026079afcd8cd005f1e1a60860bcd38a2f78e845b7c",
+    "objects-import-batch.json": "6cc95df537ad6db9dc6a6f3c54c2cf51c94cfa465a66be4b8e2b8cd59185cea7",
+    "icons-plan.json": "c3e87477608d2488b80cf6f50f66c930a192bd6a1b132a558724f58af03ec7cd"
+  }
+}

@@ -1,0 +1,32 @@
+/* Local fallback for Kanka's Pro/regular icon requests when no Font Awesome kit is configured.
+ * Uses the bundled Font Awesome Free 6 font; its original license remains in ../6.0.0/.
+ * RPG Awesome classes and brand icons keep their own fonts.
+ */
+.fa-regular, .far, .fa-duotone, .fad, .fa-light, .fal, .fa-thin, .fat {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+}
+.fa-duotone::after, .fad::after { content: none; }
+/* Free equivalents for newer or Pro-only names used by Kanka. */
+.fa-books::before { content: "\f02d"; } /* book */
+.fa-circle-location-arrow::before { content: "\f124"; } /* location-arrow */
+.fa-deer::before { content: "\f1b0"; } /* paw */
+.fa-family::before, .fa-screen-users::before { content: "\f0c0"; } /* users */
+.fa-list-timeline::before { content: "\f03a"; } /* list */
+.fa-person-fairy::before { content: "\f4ce"; } /* person with wings: dove */
+.fa-mountains::before { content: "\f6fc"; } /* mountain */
+.fa-circle-nodes::before { content: "\f542"; } /* diagram-project */
+.fa-floppy-disks::before { content: "\f0c7"; } /* floppy-disk */
+.fa-block::before { content: "\f1b2"; } /* cube */
+.fa-bars-staggered::before { content: "\f550"; } /* bars-staggered, older name stream */
+.fa-palette::before { content: "\f53f"; }
+.fa-webhook::before { content: "\f1e0"; } /* share-nodes */
+.fa-radiation::before { content: "\f7b9"; }
+.fa-swatchbook::before { content: "\f5c3"; }
+.fa-trash-restore::before { content: "\f829"; }
+.fa-sliders::before { content: "\f1de"; }
+.fa-sparkles::before { content: "\f0d0"; } /* wand-magic */
+.fa-grid-2::before, .fa-grid::before { content: "\f009"; } /* table-cells-large */
+.fa-rectangle-history::before { content: "\f187"; } /* box-archive */
+.fa-sidebar::before { content: "\f0db"; } /* table-columns */
+.fa-magnifying-glass-plus::before { content: "\f00e"; }

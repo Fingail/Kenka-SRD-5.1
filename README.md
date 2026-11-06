@@ -1,34 +1,65 @@
-# Kanka
-# [![Kanka](./.github/logo.png)](https://kanka.io)
+# Kenka-SRD-5.1
 
-[![Minimum PHP Version](http://img.shields.io/badge/php-%3E%3D%208.0-8892BF.svg)](https://php.net/)
-[![Discord](https://img.shields.io/discord/413623253366603777.svg)](https://kanka.io/go/discord)
+A local, container-based fork of [Kanka](https://github.com/owlchester/kanka) with a prepared **2014 fifth-edition SRD 5.1** rules library. Based on upstream tag **3.17**, commit `cf968d129247af92418e3ecb111904e5165464c0`.
 
-[Kanka](https://kanka.io) is a **source available** collaborative world building and campaign management tool tailored for tabletop RPG players and storytellers. This repository is the primary source for development of the Kanka platform. It's written in PHP, a mix of VueJS and jQuery, and runs with a MySQL database. A new version is released on average every a month.
+The initial setup creates a private **5e Rules — SRD 5.1** campaign with **1,584 reference entries**, searchable properties, class spell lists, attached features, race and language hierarchies, deity/pantheon memberships, and a 20-link rules sidebar. All 317 SRD creatures are included. This is a reference library, not an automated rules engine.
 
-<img width="900" alt="kanka-hero" src="https://cdn-app.kanka.io/images/share.png">
+## Launch with Docker
 
-This repository hosts the core Kanka web application.
+Requirements: Docker Engine with Compose v2, Bash, Git, and permission to run Docker as your workstation user. No host PHP, Composer, Node, or database installation is required. Allow roughly 4 GiB for normal runtime and additional memory for the one-time frontend/MinIO builds; the asset builder has a 4 GiB limit.
 
-## Install Kanka
+```bash
+git clone https://github.com/Fingail/Kenka-SRD-5.1.git
+cd Kenka-SRD-5.1
+bash docker/local/launch.sh
+```
 
-- [Installing & Running Kanka](./docs/running.md).
+The first run builds the application and MinIO images, installs locked dependencies, generates fresh credentials, initializes storage/database, compiles assets, and imports the prepared SRD batches directly inside the app container. Initial image/dependency builds take most of the time; importing the rules takes seconds to minutes. Search indexing finishes asynchronously through the worker.
 
-## Getting involved
+Open **http://127.0.0.1:18081**. Read your generated owner email and password locally from **`storage/app/local-access.json`**. That file, `.env`, OAuth keys, runtime reports, and backups are ignored by Git. There are no shared default login credentials.
 
-- [Contribute to Kanka](./docs/contributing.md)
-- [Translating Kanka](./docs/translating.md)
+The launch script can be rerun: matching SRD records are reused; edited or conflicting records stop the import. It preserves existing `.env` and owner access files. The included base initializer requires a fresh database or its existing campaign 1; importing into arbitrary campaigns is not implemented.
 
-## Technical guides
+After first setup, normal start/stop is:
 
-- [Compiling assets](./docs/assets.md)
+```bash
+docker compose -f compose.local.yaml up -d
+docker compose -f compose.local.yaml down
+```
 
-## Support and Community
+Do not add `--volumes` to a normal shutdown. See [Docker operations](docs/local-docker.md) for backups, optional services and troubleshooting.
 
-Issues are inevitable. When you encounter one when using Kanka, our team and community is here to help.
+## Default services
 
-💬 Ask for help on [Discord](https://kanka.io/go/discord)
+Only the services used by normal operation start by default:
 
-🏛️ Find a solution in our [Documentation](https://docs.kanka.io)
+| Service | Purpose |
+| --- | --- |
+| `laravel.test` | PHP 8.5 / Laravel app, HTTP on 18081 |
+| `mariadb` | Application and audit databases |
+| `redis` | Cache, queues and sessions support |
+| `worker` | Background work and search indexing |
+| `meilisearch` | Full-text search |
+| `minio` | Local object storage; ports 19000/19001 |
+| `thumbor`, `thumbor-nginx` | Image thumbnails; port 18889 |
 
-📧 Shoot us an email at [hello@kanka.io](mailto:hello@kanka.io)
+Database, Redis and search ports are not published. Published service ports bind to **127.0.0.1**. Mailpit (`dev`) and the realtime server (`realtime`) are optional profiles. The asset builder (`build`) runs once and exits. Email is logged and realtime broadcasting uses the log driver by default.
+
+## Changes from upstream
+
+- Reproducible slim workstation containers, source-built MinIO and local storage initialization.
+- Opt-in advanced campaign/user features restricted to `APP_ENV=local`; local API and MCP on the same host as the app. Authentication and campaign permissions still apply.
+- Direct SRD importer with persistent source keys, hashes, conflict guards, per-record transactions, complete content/property readback and explicit relationship linking.
+- SRD categories, sidebar, properties and searchable spell/creature/equipment data, with source-page attribution.
+- Common versus Unique object groups, 14 creature types, 8 spell schools and 15 equipment families.
+- 44 shared free RPG Awesome icons, free Font Awesome navigation fallbacks, and a compact GitHub/licensing footer.
+- Integer queue visibility timeouts for compatibility with Carbon date arithmetic.
+- Fresh random installation credentials; no personal accounts, hosted API tokens, campaign exports, live database dumps or artwork uploads are published.
+
+The local feature switch does not include paid marketplace content, Font Awesome Pro assets, external subscription services, billing, social logins or Discord setup. The default stack is intended for a single local workstation; public/LAN hosting requires a separate deployment design.
+
+## Engineering and licensing
+
+Read [engineering handoff.md](engineering%20handoff.md) for architecture, known limits, validation and follow-up work. [Prepared data details](data/srd5.1/README.md) describe category counts and import constraints.
+
+Kanka is **source available**, with its original [LICENSE](LICENSE), including the Commons Clause, preserved. The rules data uses **CC BY 4.0**; icons and dependencies have separate licenses. See [LICENSING.md](LICENSING.md) for attribution and third-party notices. This fork is not affiliated with or endorsed by Wizards of the Coast or Owlchester.
