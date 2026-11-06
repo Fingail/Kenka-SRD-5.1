@@ -10,27 +10,25 @@ docker compose -f compose.local.yaml ps
 docker compose -f compose.local.yaml down
 ```
 
-Normal operation uses eight containers: app, MariaDB, Redis, worker, Meilisearch, MinIO, Thumbor and its Nginx proxy. Services retain their data in named Docker volumes. The source directory is bind-mounted into the app. This is a workstation/developer layout, not an immutable production image.
+Normal operation uses ten containers: app, MariaDB, Redis, worker, Meilisearch, MinIO, Thumbor, its Nginx proxy, Mailpit and Reverb. Services retain their data in named Docker volumes. The source directory is bind-mounted into the app. This is a workstation/developer layout, not an immutable production image.
 
 Use `bash docker/local/launch.sh --no-build` only when the two local images already exist. It still installs dependencies and builds frontend assets. After dependency updates, rebuild through the normal launch or `docker compose -f compose.local.yaml build`.
 
-## Optional services
+## Mail and realtime
 
-Mailpit is a development mail viewer:
+Mailpit and Reverb run by default. Mailpit captures application emails without sending them to external recipients. Read captured email at http://127.0.0.1:18025. Default SMTP settings are `MAIL_DRIVER=smtp`, `MAIL_MAILER=smtp`, `MAIL_HOST=mailpit`, and `MAIL_PORT=1025`.
 
-```bash
-docker compose -f compose.local.yaml --profile dev up -d mailpit
-```
+Realtime broadcasting uses `BROADCAST_DRIVER=reverb`. Server-side publishing connects through `REVERB_PUBLISH_HOST=reverb` and `REVERB_PUBLISH_PORT=8080` inside Docker. Browser connections use `VITE_REVERB_HOST=127.0.0.1` and the published port, normally 18080. Keep generated Reverb app credentials consistent across services; do not replace them with shared defaults. Rebuild frontend assets after changing Vite configuration.
 
-To deliver application mail there, set `MAIL_MAILER=smtp` in your ignored `.env`, retaining `MAIL_HOST=mailpit`, then restart the app and worker. Default mail is logged without this container.
-
-The realtime server is optional:
+For installations created with the earlier log-only defaults, update the ignored `.env` to the values above, then run:
 
 ```bash
-docker compose -f compose.local.yaml --profile realtime up -d reverb
+vendor/bin/sail artisan config:clear
+docker compose -f compose.local.yaml up -d
+docker compose -f compose.local.yaml restart laravel.test worker reverb
 ```
 
-Set `BROADCAST_DRIVER=reverb` in `.env` and restart app/worker when enabling broadcasting. Generated Reverb keys and Vite variables must agree; rerun the frontend build after changing browser configuration. The default log driver needs no realtime container.
+The launch script preserves existing `.env` files. Existing browser configuration only needs rebuilding if its Vite host, port, or public app key changed.
 
 The asset builder is an ephemeral service:
 
@@ -42,7 +40,7 @@ It has a larger memory limit than the app and is not started by a normal `up -d`
 
 ## Ports
 
-Default loopback ports: application 18081, MinIO API 19000 and console 19001, Thumbor 18889. Optional Reverb 18080 and Mailpit 18025. MariaDB, Redis and Meilisearch remain inside the Docker network.
+Default loopback ports: application 18081, MinIO API 19000 and console 19001, Thumbor 18889. Reverb 18080 and Mailpit 18025. MariaDB, Redis and Meilisearch remain inside the Docker network.
 
 For a separate fresh installation, choose an unused HTTP port and project name before the first launch:
 

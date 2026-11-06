@@ -11,7 +11,7 @@ fi
 docker compose run --rm --no-deps --user "$(id -u):$(id -g)" --entrypoint php \
     -e LOCAL_HTTP_PORT="${KENKA_HTTP_PORT:-18081}" -e LOCAL_PROJECT="${KENKA_PROJECT:-kenka-srd-51}" \
     laravel.test docker/local/generate-env.php
-docker compose up -d mariadb redis minio meilisearch thumbor thumbor-nginx
+docker compose up -d mariadb redis minio meilisearch thumbor thumbor-nginx mailpit
 if [[ ! -f vendor/autoload.php ]]; then
     docker compose run --rm --no-deps laravel.test composer install --no-interaction --prefer-dist
 fi

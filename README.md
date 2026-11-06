@@ -27,11 +27,11 @@ docker compose -f compose.local.yaml up -d
 docker compose -f compose.local.yaml down
 ```
 
-Do not add `--volumes` to a normal shutdown. See [Docker operations](docs/local-docker.md) for backups, optional services and troubleshooting.
+Do not add `--volumes` to a normal shutdown. See [Docker operations](docs/local-docker.md) for backups, service configuration and troubleshooting.
 
 ## Default services
 
-Only the services used by normal operation start by default:
+All ten local runtime services start by default, including mail capture and realtime updates:
 
 | Service | Purpose |
 | --- | --- |
@@ -42,8 +42,10 @@ Only the services used by normal operation start by default:
 | `meilisearch` | Full-text search |
 | `minio` | Local object storage; ports 19000/19001 |
 | `thumbor`, `thumbor-nginx` | Image thumbnails; port 18889 |
+| `mailpit` | Local SMTP capture and mail viewer; port 18025 |
+| `reverb` | Realtime WebSocket updates; port 18080 |
 
-Database, Redis and search ports are not published. Published service ports bind to **127.0.0.1**. Mailpit (`dev`) and the realtime server (`realtime`) are optional profiles. The asset builder (`build`) runs once and exits. Email is logged and realtime broadcasting uses the log driver by default.
+Database, Redis and search ports are not published. Published service ports bind to **127.0.0.1**. Mailpit captures application email locally; view it at **http://127.0.0.1:18025**. Reverb handles realtime updates. The asset builder (`build`) runs once and exits. SMTP delivery to external recipients requires a separately configured mail provider.
 
 ## Changes from upstream
 

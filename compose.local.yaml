@@ -24,6 +24,8 @@ services:
       redis: {condition: service_healthy}
       minio: {condition: service_healthy}
       meilisearch: {condition: service_healthy}
+      mailpit: {condition: service_started}
+      reverb: {condition: service_started}
   builder:
     <<: *app
     command: ['yarn', 'build']
@@ -46,7 +48,6 @@ services:
     command: ['php', 'artisan', 'reverb:start', '--host=0.0.0.0', '--port=8080']
     ports: ['127.0.0.1:${REVERB_PORT:-18080}:8080']
     mem_limit: 192m
-    profiles: [realtime]
     depends_on:
       redis: {condition: service_healthy}
   mariadb:
@@ -135,7 +136,6 @@ services:
     restart: unless-stopped
     depends_on: [thumbor]
   mailpit:
-    profiles: [dev]
     image: axllent/mailpit:latest
     ports: ['127.0.0.1:${MAILPIT_PORT:-18025}:8025']
     networks: [local]
