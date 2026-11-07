@@ -15,6 +15,7 @@ html.native-dr-tabletop{overflow:hidden!important;scrollbar-gutter:auto!importan
 .native-dr-tabletop .tabletop>.container{position:relative;z-index:2;pointer-events:none;background:transparent}
 .native-dr-tabletop .tabletop .initiative-row{pointer-events:none}
 .native-dr-tabletop .tabletop .initiative-row>*{pointer-events:auto}
+.native-dr-tabletop .tabletop .initiative-row>.v-btn{background:rgba(255,255,255,.95);box-shadow:0 2px 8px #0003}
 .native-dr-tabletop .tabletop>.container>.d-flex.align-stretch{position:fixed;right:12px;top:190px;bottom:220px;width:min(430px,40vw);pointer-events:none;max-height:none!important;margin-top:0!important}
 .native-dr-tabletop .tabletop>.container>.d-flex.align-stretch>.pl-4{pointer-events:auto;background:rgba(255,255,255,.9);border-radius:8px;box-shadow:0 4px 20px #0003;padding:8px!important;align-self:flex-end;max-height:100%}
 .native-dr-tabletop .tabletop>.container>.d-flex.align-stretch>.pl-4:empty{display:none}
