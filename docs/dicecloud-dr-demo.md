@@ -84,7 +84,7 @@ The bridge registers each configured tabletop under its own route, shares collec
 
 ## Native DiceCloud interface — current demo
 
-Open **http://127.0.0.1:18084/kanka-tabletop/**; it redirects to the native **Renovar — Native DiceCloud tabletop** entry. Sign in with the existing local DiceCloud GM or player account. This is the original DiceCloud tabletop UI, with creature cards, the bottom selected-character action bar, native targeting/advantage/action dialogs and the native shared roll log. The small `native-ui.js` adapter embeds DR in DiceCloud's existing empty map area and forwards token selection into the native component. DR's duplicate chat/sidebar and token-properties editor remain hidden.
+Open **http://127.0.0.1:18084/kanka-tabletop/**; it redirects to the native **Renovar — Native DiceCloud tabletop** entry. Sign in with the existing local DiceCloud GM or player account. This is the original DiceCloud tabletop UI, with creature cards, the bottom selected-character action bar, native targeting/advantage/action dialogs and the native shared roll log. The small `native-ui.js` adapter makes DR fill the viewport and forwards token selection into the native component. Native character cards, the bottom action bar and a translucent roll log float above the map. The navigation drawer starts closed and remains accessible through DiceCloud’s menu button; empty overlay space passes pointer input through to the map. DR's duplicate chat/sidebar and token-properties editor remain hidden.
 
 ```bash
 python3 docker/dc-dr-demo/launch-tabletop.py

@@ -14,6 +14,7 @@ try{
  assert.equal(await page.locator('.tabletop-creature-card').count(),11);
  await page.frameLocator('#native-dr-map').locator('canvas').first().waitFor({timeout:60000});
  assert.equal(await page.locator('#sheetHost,#tracker,#logHost').count(),0);
+ const mapBounds=await page.locator('#native-dr-map').boundingBox();assert.equal(mapBounds.x,0);assert.equal(mapBounds.y,0);assert.equal(mapBounds.width,1700);assert.equal(mapBounds.height,1100);
  await page.locator('.tabletop-creature-card').filter({hasText:'Lux'}).click();
  await page.locator('.selected-creature-bar').waitFor();
  const data=await page.evaluate(()=>{const c=Meteor.connection._mongo_livedata_collections;return {creatures:c.creatures.find({tabletopId:location.pathname.split('/').pop()}).fetch(),props:c.creatureProperties.find({removed:{$ne:true}}).fetch()};});
@@ -39,6 +40,6 @@ try{
  await page.screenshot({path:'/test-data/native-gm.png',fullPage:true});
  const nativeUrl=page.url();const playerPage=await browser.newPage({viewport:{width:1700,height:1100}});playerPage.on('pageerror',e=>errors.push(e.message));await playerPage.goto(cfg.dcPublic);await playerPage.waitForFunction(()=>window.Meteor?.status()?.connected);await playerPage.evaluate(a=>new Promise((resolve,reject)=>Meteor.loginWithPassword(a.username,a.password,e=>e?reject(Error(e.reason||e.message)):resolve())),cfg.player);await playerPage.goto(nativeUrl);await playerPage.locator('.tabletop-creature-card').first().waitFor();assert.equal(await playerPage.locator('.tabletop-creature-card').count(),11);await playerPage.frameLocator('#native-dr-map').locator('canvas').first().waitFor({timeout:60000});await playerPage.locator('.tabletop-creature-card').filter({hasText:'Lux'}).click();await playerPage.locator('.selected-creature-bar').waitFor();assert.equal(await playerPage.locator('#sheetHost,#tracker,#logHost').count(),0);assert.deepEqual(errors,[]);await playerPage.screenshot({path:'/test-data/native-player.png',fullPage:true});
 
- writeFileSync('/test-data/native-result.json',JSON.stringify({passed:true,url:page.url(),native_cards:11,player_access:true,native_action_dialog:true,native_roll_log:true,damage_matches_hit:true,dr_map:true,custom_controls:false,errors},null,2),{mode:0o600});
+ writeFileSync('/test-data/native-result.json',JSON.stringify({passed:true,url:page.url(),native_cards:11,player_access:true,native_action_dialog:true,native_roll_log:true,damage_matches_hit:true,dr_map:true,full_screen_map:true,custom_controls:false,errors},null,2),{mode:0o600});
  console.log('Native DiceCloud tabletop browser check passed.');
 }catch(e){for(const p of browser.contexts().flatMap(c=>c.pages())){await p.screenshot({path:'/test-data/native-failure.png',fullPage:true}).catch(()=>{});console.log((await p.locator('body').innerText()).slice(-4000));}throw e;}finally{await browser.close();}
