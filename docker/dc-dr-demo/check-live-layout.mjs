@@ -18,7 +18,8 @@ try{
  await page.waitForFunction(()=>!window.__staleLayoutCanary&&window.Meteor?.userId()&&document.getElementById('native-dr-map')?.getBoundingClientRect().width===innerWidth,undefined,{timeout:180000});
  await page.frameLocator('#native-dr-map').locator('canvas').first().waitFor({timeout:60000});
  const after=await page.locator('#native-dr-map').boundingBox();assert.deepEqual(after,{x:0,y:0,width:1600,height:1000});assert.equal(page.url(),url);
+ const feed=page.locator('.tabletop>.container>.d-flex.align-stretch>.pl-4');const feedBounds=await feed.boundingBox();assert.equal(feedBounds.y,0);assert.equal(feedBounds.height,1000);assert.equal(await feed.evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(48, 48, 48)');assert.equal(await page.locator('.initiative-row>.v-btn').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(48, 48, 48)');
  await page.screenshot({path:'/test-data/layout-after-update.png'});
- writeFileSync('/test-data/live-layout-result.json',JSON.stringify({passed:true,automatic_reload:true,login_preserved:true,url,before,after},null,2),{mode:0o600});
+ writeFileSync('/test-data/live-layout-result.json',JSON.stringify({passed:true,automatic_reload:true,full_height_feed:true,dark_grey_feed_and_menu:true,login_preserved:true,url,before,after},null,2),{mode:0o600});
  console.log('Existing tab automatically loaded the full-screen layout and kept its login.');
 }finally{await browser.close();}
