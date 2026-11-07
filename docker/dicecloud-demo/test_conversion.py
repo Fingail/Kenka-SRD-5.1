@@ -37,6 +37,17 @@ class ConversionTest(unittest.TestCase):
         self.assertNotIn('slotFillerCondition', nodes[result['idMap']['base']])
         self.assertEqual(nodes[result['idMap']['stat']]['slotFillerCondition'], 'strength >= 13')
 
+    def test_point_buy_rows_are_requested_and_preserved(self):
+        source = self.fixture()
+        rows = [{'name': 'Strength', 'variableName': 'unmodifiedStrength', 'value': 15}]
+        source['nodes']['stat']['type'] = 'pointBuy'
+        source['nodes']['stat']['values'] = rows
+        result = converter.convert(source, 'owner')
+        self.assertEqual(next(n for n in result['nodes'] if n['_id'] == result['idMap']['stat'])['values'], rows)
+        import json
+        fields = json.loads(pathlib.Path(__file__).with_name('library-fields.json').read_text())
+        self.assertIn('values', fields)
+
     def test_missing_reference_refused(self):
         source = self.fixture(); source['nodes']['ref']['ref']['id'] = 'missing'
         with self.assertRaisesRegex(ValueError, 'unresolved'):

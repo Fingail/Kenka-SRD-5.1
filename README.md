@@ -74,6 +74,9 @@ The handler uses pinned Open Character packages for supported calculations; it i
 
 The current character-manager demo is [DiceCloud](docs/dicecloud-demo.md) at **http://127.0.0.1:18084**. Start it with `python3 docker/dicecloud-demo/launch.py`. It uses its own app/MongoDB containers, persistent volumes and local accounts; the private demo login is in ignored `storage/app/dicecloud-demo/access.json` after browser setup. The local test data includes a resolved hosted 2014 SRD library (10,182 entries with private dependency subtrees), alongside the small Fighter demo. Reviewed stale-reference repairs and native-schema validation prepare it for character creation and advancement testing. A Kanka/OCF adapter is not enabled. See the demo documentation for source limits, test results and conversion tools.
 
+
+A private Kanka character test bridge also exercises native Ranger advancement and creates a reusable campaign Satyr library. It preserves unresolved source choices for review; campaign data stays local. See [import workflow and limits](docs/dicecloud-demo.md#private-kanka-ranger-advancement-test).
+
 ## Retired PCGen browser demo
 
 PCGen is stopped and its container, image and downloaded runtime have been removed. Its generated characters/settings are preserved locally, including a backup under `storage/app/pcgen-demo/preserved/`. DiceCloud now uses its former port. The following launcher and export documentation is retained for a deliberate later evaluation; stop DiceCloud before reusing port 18084.
