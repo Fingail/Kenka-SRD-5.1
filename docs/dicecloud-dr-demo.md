@@ -91,6 +91,8 @@ python3 docker/dc-dr-demo/launch-tabletop.py
 python3 docker/dc-dr-demo/check.py --native
 ```
 
+The launcher hashes the mounted map/UI adapter files into a private `client-version.env` and sets Meteor’s `AUTOUPDATE_VERSION`. Layout changes therefore notify already-open tabs through Meteor’s native reload mechanism; the injected script URL also includes that version. Run the launcher after changing these mounted scripts. `check.py --live-layout` holds an authenticated tab open across a launch in a second terminal and verifies automatic reload, preserved login and full-viewport map bounds. It reads the encounter without changing combat data.
+
 The deployment uses the existing DiceCloud/MongoDB services and the map service at loopback port 18086. `DC_DR_CONFIG` now selects private `storage/app/kanka-tabletop/native-config.json`, mode `native`. The previous custom room/action/approval routes, DDP action blockers, player-publication override and HP/rotation synchronization loop are not registered. The old port-18085 map service is stopped by the launcher. Existing custom-room records and code are preserved for reference, not used by this table.
 
 Initial preparation reuses the reviewed Kanka-derived encounter inputs and clones fresh native actors: Lux, bear, dragon and eight Kobolds. No unlimited demo potion action or custom death/initiative/turn workflow is added. Imported attack damage is placed under DiceCloud's native **On hit** branches, preserving existing library branches. Native actions use the app's standard `actions.insertAction`/`actions.runAction` methods and native logs/properties. Existing pinned upstream compatibility fixes remain; no new parallel combat engine is introduced.

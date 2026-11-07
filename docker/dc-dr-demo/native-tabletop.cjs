@@ -2,9 +2,9 @@
 // Presentation and map authentication only. DiceCloud's own DDP methods,
 // publication, action dialogs and logs handle all gameplay.
 module.exports=({Meteor,Package,cfg,ready,context})=>{
- const fs=require('fs'),route=cfg.route;
+ const fs=require('fs'),route=cfg.route,clientVersion=encodeURIComponent(process.env.AUTOUPDATE_VERSION||'native');
  ready.catch(e=>console.error('Native tabletop preparation failed:',e.message));
- Package.webapp.WebAppInternals.registerBoilerplateDataCallback('native-dr-map',(req,data)=>{data.dynamicHead=(data.dynamicHead||'')+'<script src="'+route+'/native-ui.js" defer></script>';return true;});
+ Package.webapp.WebAppInternals.registerBoilerplateDataCallback('native-dr-map',(req,data)=>{data.dynamicHead=(data.dynamicHead||'')+'<script src="'+route+'/native-ui.js?v='+clientVersion+'" defer></script>';return true;});
  Package.webapp.WebApp.rawConnectHandlers.use((req,res,next)=>{
   const path=req.url.split('?')[0];if(path!==route&&!path.startsWith(route+'/'))return next();
   const json=(status,value)=>{res.statusCode=status;res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');res.end(JSON.stringify(value));};

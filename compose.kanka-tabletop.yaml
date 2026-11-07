@@ -1,6 +1,8 @@
 # Combine with the DiceCloud and DC/DR compose files.
 services:
   dicecloud:
+    env_file:
+      - ./storage/app/kanka-tabletop/client-version.env
     environment:
       DC_DR_CONFIG: /run/secrets/kanka-native.json
     volumes:
