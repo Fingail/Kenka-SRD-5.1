@@ -1,0 +1,40 @@
+name: kenka-dicecloud-demo
+services:
+  mongo:
+    image: mongo:6.0.26@sha256:0a83b2f824b29c94c5284a49b018db2e3166d9879d1edda5cce545d899ef2bbb
+    env_file: ./storage/app/dicecloud-demo/mongo.env
+    entrypoint: ['/bin/sh', '/demo/mongo-entrypoint.sh']
+    volumes:
+      - dicecloud-db:/data/db
+      - ./docker/dicecloud-demo/mongo-entrypoint.sh:/demo/mongo-entrypoint.sh:ro
+    restart: unless-stopped
+    mem_limit: 1g
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'quit(db.adminCommand({ping:1}).ok ? 0 : 1)']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  dicecloud:
+    image: kenka-local/dicecloud-demo:88fc9c8
+    build:
+      context: ./storage/app/dicecloud-demo/source
+      dockerfile: ../../../../docker/dicecloud-demo/Dockerfile
+    env_file: ./storage/app/dicecloud-demo/app.env
+    ports:
+      - '127.0.0.1:18084:3000'
+    volumes:
+      - dicecloud-files:/data/files
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 2g
+    healthcheck:
+      test: ['CMD', 'node', '-e', "require('http').get('http://127.0.0.1:3000/api/status',r=>{r.resume();process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+volumes:
+  dicecloud-db:
+  dicecloud-files:

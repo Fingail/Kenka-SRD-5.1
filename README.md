@@ -70,7 +70,13 @@ The integration provides:
 
 The handler uses pinned Open Character packages for supported calculations; it is not a complete 5e rules engine. Range, movement budgets, concentration, duration expiry and unsupported condition mechanics require GM adjudication. Native DR accounts use shared GM/player credentials, without individual character ownership. See [operations and verification](docs/ocf-dr-integration-demo.md) and [engineering handoff](engineering%20handoff.md).
 
-## PCGen browser demo
+## DiceCloud character advancement demo
+
+The current character-manager demo is [DiceCloud](docs/dicecloud-demo.md) at **http://127.0.0.1:18084**. Start it with `python3 docker/dicecloud-demo/launch.py`. It uses its own app/MongoDB containers, persistent volumes and local accounts; the private demo login is in ignored `storage/app/dicecloud-demo/access.json` after browser setup. A small 2014 SRD Fighter 1–5 library supports evaluating build choices and advancement. It is not a complete rules library or an enabled Kanka/OCF integration.
+
+## Retired PCGen browser demo
+
+PCGen is stopped and its container, image and downloaded runtime have been removed. Its generated characters/settings are preserved locally, including a backup under `storage/app/pcgen-demo/preserved/`. DiceCloud now uses its former port. The following launcher and export documentation is retained for a deliberate later evaluation; stop DiceCloud before reusing port 18084.
 
 An optional, isolated PCGen desktop is available through a browser:
 
