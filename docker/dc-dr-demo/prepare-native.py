@@ -19,7 +19,7 @@ if not path.exists():
 # The map adapter is mounted outside Meteor's compiled client bundle. Include
 # it in the deployment version so existing tabs receive Meteor's reload notice.
 client_hash=hashlib.sha256()
-for name in ['native-ui.js','native-map-bridge.js','native-tabletop.cjs','dr-server.cjs']:
+for name in ['native-ui.js','native-map-bridge.js','native-tabletop.cjs','dr-server.cjs','native-combat.cjs','native-combat-ui.js','patch-native-client.cjs','native-service-worker.js']:
     client_hash.update(name.encode()+b'\0'+(ROOT/'docker/dc-dr-demo'/name).read_bytes())
 version_file=path.parent/'client-version.env'
 version_file.write_text('AUTOUPDATE_VERSION=native-map-'+client_hash.hexdigest()[:20]+'\n')

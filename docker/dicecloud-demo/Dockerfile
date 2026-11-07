@@ -9,6 +9,8 @@ COPY app/ ./
 # Keep the native image library on the compatible 0.32 release for this demo.
 RUN npm install --package-lock-only --ignore-scripts --no-audit --no-fund sharp@0.32.6
 RUN npm ci --no-audit --no-fund
+COPY .demo-patches/patch-native-client.cjs /build/patch-native-client.cjs
+RUN node /build/patch-native-client.cjs /build/app
 RUN meteor build /build/output --directory --architecture os.linux.x86_64 --allow-superuser
 WORKDIR /build/output/bundle/programs/server
 RUN npm install --production --no-audit --no-fund encoding@0.1.13

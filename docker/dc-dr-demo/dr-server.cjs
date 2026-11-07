@@ -7,13 +7,12 @@ const {getEnv}=require('/usr/src/app/server-build/env');
 bootstrapServer(getEnv(process.env)).then(({app,httpServer})=>{
  const router=express.Router();const reply=(res,status,data)=>{res.statusCode=status;res.setHeader('Content-Type','application/json');res.end(JSON.stringify(data));};const serve=(res,type,path)=>{res.setHeader('Content-Type',type);res.setHeader('Cache-Control','no-store');res.end(fs.readFileSync(path));};
  router.patch('/api/map/:mapId/token/:tokenId',express.json({limit:'16kb'}),async(req,res,next)=>{
-  if(process.env.DC_DR_NATIVE==='1')return next();
   const credential=(req.headers.authorization||'').replace(/^Bearer /,'')||new URL(req.originalUrl,'http://local').searchParams.get('authorization');
   if(credential===process.env.DM_PASSWORD)return next();
   if(credential!==process.env.PC_PASSWORD)return reply(res,401,{error:{message:'DR authentication required'}});
   if(Object.keys(req.body||{}).some(k=>!['x','y'].includes(k))||['x','y'].some(k=>req.body[k]!==undefined&&(!Number.isFinite(req.body[k])||Math.abs(req.body[k])>10000000)))return reply(res,403,{error:{message:'Players may only move their own token.'}});
   try{
-   const status=await new Promise((resolve,reject)=>{const body=JSON.stringify({mapId:req.params.mapId,tokenId:req.params.tokenId});const r=http.request(new URL((process.env.DC_DR_ROUTE||'/dc-dr')+'/api/move','http://dicecloud:3000'),{method:'POST',headers:{Authorization:'Bearer '+(req.headers['x-dicecloud-token']||''),'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}},s=>{s.resume();resolve(s.statusCode);});r.setTimeout(5000,()=>r.destroy(Error('Permission timeout')));r.on('error',reject);r.end(body);});
+   const status=await new Promise((resolve,reject)=>{const body=JSON.stringify({mapId:req.params.mapId,tokenId:req.params.tokenId});const r=http.request(new URL((process.env.DC_DR_ROUTE||'/dc-dr')+(process.env.DC_DR_NATIVE==='1'?'/api/combat/move':'/api/move'),'http://dicecloud:3000'),{method:'POST',headers:{Authorization:'Bearer '+(req.headers['x-dicecloud-token']||''),'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}},s=>{s.resume();resolve(s.statusCode);});r.setTimeout(5000,()=>r.destroy(Error('Permission timeout')));r.on('error',reject);r.end(body);});
    if(status>=200&&status<300)return next();return reply(res,status,{error:{message:'Move only your PC on its active turn.'}});
   }catch{return reply(res,503,{error:{message:'DiceCloud movement authorization unavailable.'}});}
  });

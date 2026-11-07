@@ -74,7 +74,7 @@ The handler uses pinned Open Character packages for supported calculations; it i
 
 Open **[Renovar — Native DiceCloud tabletop](http://127.0.0.1:18084/kanka-tabletop/)**. This now uses DiceCloud's own creature cards, selected-character action bar, targeting dialogs, dice controls and roll log. A small adapter embeds the DR map; Kanka supplies read-only source data and the quest link. Launch with `python3 docker/dc-dr-demo/launch-tabletop.py` after the existing private fixtures are prepared.
 
-The previous custom combat shell, turn approvals, death workflows and health-band UI are disabled in this deployment. Its code/data remain available for later reference; it is not the active gameplay path. See [native tabletop operations](docs/dicecloud-dr-demo.md#native-dicecloud-interface-current-demo).
+The native interface now adds capital-I initiative requests, GM participant selection, queued PC/NPC rolls, an explicit Begin combat button and a shared turn tracker. Player out-of-turn actions require GM approval before dice open; movement is limited to the active PC. The feed has a dock/pop-out chevron and navigation uses a chevron. The earlier custom combat shell, death workflow and health-band UI remain disabled. See [native tabletop operations](docs/dicecloud-dr-demo.md#native-dicecloud-interface-current-demo).
 
 ## DiceCloud character advancement demo
 

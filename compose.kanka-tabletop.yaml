@@ -14,6 +14,7 @@ services:
       - '127.0.0.1:18086:3000'
     env_file:
       - ./storage/app/kanka-tabletop/dr.env
+      - ./storage/app/kanka-tabletop/client-version.env
     environment:
       DATA_DIRECTORY: /usr/src/app/data
       HOST: 0.0.0.0
