@@ -122,7 +122,7 @@ Meteor.startup(async function () {
   const ready=seed().then(async room=>{
    // Imported flat attacks need DiceCloud's native On Hit branch. Preserve
    // existing library branches; this is a one-time property-graph conversion.
-   for(const p of room.profiles){const rows=await props(p.creatureId);for(const attack of rows.filter(x=>x.type==='action'&&x.attackRoll&&x.attackRoll.calculation)){
+   for(const p of room.profiles){const rows=await props(p.creatureId);for(const patch of require('/opt/dc-dr-assets/native-ammo.cjs')(rows))await P.updateAsync(patch.id,{$set:{...patch.set,dirty:true}},{selector:{type:rows.find(x=>x._id===patch.id).type}});for(const attack of rows.filter(x=>x.type==='action'&&x.attackRoll&&x.attackRoll.calculation)){
     const children=rows.filter(x=>x.parentId===attack._id&&x.type==='damage');if(!children.length)continue;
     const branch=await add(p.ownerId,p.creatureId,{type:'branch',name:'On hit',branchType:'hit'},attack._id);
     await P.updateAsync({_id:{$in:children.map(x=>x._id)}},{$set:{parentId:branch,dirty:true}},{multi:true});
