@@ -1,6 +1,6 @@
 # DiceCloud local demo
 
-DiceCloud replaces the retired PCGen desktop demo on **http://127.0.0.1:18084**. It is a browser application with its own local accounts. Existing Kanka, OCF, DR and PlanarAlly services remain separate.
+DiceCloud replaces the retired PCGen desktop demo on **http://127.0.0.1:18084**. It is a browser application with its own local accounts. Existing Kanka, OCF, DR and PlanarAlly services remain separate. An optional [native DiceCloud + copied DR encounter demo](dicecloud-dr-demo.md) now adds gameplay at `/dc-dr/` with its own map on port 18085.
 
 ```bash
 python3 docker/dicecloud-demo/launch.py
@@ -92,6 +92,8 @@ The live test verifies 10 core stats, 18 skills, six saves, four attack bonuses,
 The test also exposed the quoted `values` field missing from the library projection. The projection now requests it; both existing point-buy definitions were refreshed from their full public nodes and their six rows restored locally. A regression check verifies the field is requested and survives conversion (six focused converter tests now pass).
 
 ## Proposed DiceCloud → OCF → Dice campaign publishing
+
+**Gameplay update:** the [native DiceCloud/DR demo](dicecloud-dr-demo.md) now offers a separate path where DiceCloud owns live HP, effects and native action resolution. The SQLite combat ownership and flat JSON compilation described below apply to the original OCF path; they are not required by the native demo. The publication workflow remains a future design.
 
 This is a design assessment, not an enabled outbound sync. The destination would be a new local **Dice** campaign copied from clean **5e Rules — SRD 5.1**. Preserve the original SRD campaign and Renovar. Discover the actual destination campaign ID after cloning; do not assume it is 3. The current encounter server and PC sheet importer hardcode campaign 2 and need explicit installation/campaign configuration and namespaced mappings before using this destination.
 

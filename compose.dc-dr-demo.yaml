@@ -1,0 +1,38 @@
+# Optional integration overlay; combine with compose.dicecloud-demo.yaml.
+services:
+  dicecloud:
+    environment:
+      DC_DR_CONFIG: /run/secrets/dc-dr.json
+    volumes:
+      - ./storage/app/dc-dr-demo/config.json:/run/secrets/dc-dr.json:ro
+      - ./docker/dc-dr-demo:/opt/dc-dr-assets:ro
+  dc-dr-map:
+    image: dungeonrevealer/dungeon-revealer:v1.17.1@sha256:234c13f650e977f6f3a344d9265eef979da59da8a572629db88b5cb448417797
+    ports:
+      - '127.0.0.1:18085:3000'
+    env_file:
+      - ./storage/app/dc-dr-demo/dr.env
+    environment:
+      DATA_DIRECTORY: /usr/src/app/data
+      HOST: 0.0.0.0
+      PORT: '3000'
+    volumes:
+      - dc-dr-data:/usr/src/app/data
+      - ./docker/dc-dr-demo/dr-server.cjs:/usr/src/app/dc-dr-server.cjs:ro
+      - ./docker/dc-dr-demo/map-bridge.js:/usr/src/app/dc-dr-map-bridge.js:ro
+      - ./storage/app/dc-dr-demo/overlay/index.html:/usr/src/app/build/index.html:ro
+      - ./storage/app/dc-dr-demo/overlay/dm-area.ba8ac6e2.js:/usr/src/app/build/assets/dm-area.ba8ac6e2.js:ro
+      - ./storage/app/dc-dr-demo/overlay/is-dungeon-master-context.7308d038.js:/usr/src/app/build/assets/is-dungeon-master-context.7308d038.js:ro
+      - ./storage/app/dc-dr-demo/overlay/map-view.5707b3e0.js:/usr/src/app/build/assets/map-view.5707b3e0.js:ro
+    command: ['node', 'dc-dr-server.cjs']
+    restart: unless-stopped
+    mem_limit: 768m
+    healthcheck:
+      test: ['CMD', 'node', '-e', "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+volumes:
+  dc-dr-data:
+    external: true
+    name: kenka-dicecloud-demo_dc-dr-data

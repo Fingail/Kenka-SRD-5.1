@@ -29,6 +29,8 @@ def main():
     patches = source / '.demo-patches'
     patches.mkdir(exist_ok=True)
     shutil.copyfile(ROOT / 'docker/dicecloud-demo/patch-library-copy.cjs', patches / 'patch-library-copy.cjs')
+    shutil.copyfile(ROOT / 'docker/dc-dr-demo/native-server.cjs', patches / 'native-server.cjs')
+    shutil.copyfile(ROOT / 'docker/dc-dr-demo/patch-native.cjs', patches / 'patch-native.cjs')
     if not (directory / 'mongo.env').exists():
         database_password = secrets.token_urlsafe(32)
         (directory / 'mongo.env').write_text('MONGO_INITDB_ROOT_USERNAME=dicecloud\nMONGO_INITDB_ROOT_PASSWORD=' + database_password + '\n')

@@ -70,9 +70,15 @@ The integration provides:
 
 The handler uses pinned Open Character packages for supported calculations; it is not a complete 5e rules engine. Range, movement budgets, concentration, duration expiry and unsupported condition mechanics require GM adjudication. Native DR accounts use shared GM/player credentials, without individual character ownership. See [operations and verification](docs/ocf-dr-integration-demo.md) and [engineering handoff](engineering%20handoff.md).
 
+## DiceCloud + DR gameplay demo
+
+The [native DiceCloud/DR integration](docs/dicecloud-dr-demo.md) is available at **http://127.0.0.1:18084/dc-dr/**. Launch with `python3 docker/dc-dr-demo/launch.py`. DiceCloud resolves native actions and stores character/combat state; a separate copied DR map runs on port 18085. This path does not require OCF during gameplay and leaves the original port-18083 OCF demo available.
+
+The prepared encounter includes cloned Lux, Black Bear, Adult Gold Dragon and eight Kobolds. It supports token-selected sheets, attack/heal targeting, native rolls/saves/damage, conditions, initiative, player turn approval/movement limits, death saves, health indicators and a shared log with independent sheet/log popouts. GM credentials remain in the existing private DiceCloud access file; separate player access is in ignored `storage/app/dc-dr-demo/access.json`. Area geometry, full condition automation and some advanced 5e mechanics still require GM adjudication. Kanka publication and a new Dice campaign remain planned.
+
 ## DiceCloud character advancement demo
 
-The current character-manager demo is [DiceCloud](docs/dicecloud-demo.md) at **http://127.0.0.1:18084**. Start it with `python3 docker/dicecloud-demo/launch.py`. It uses its own app/MongoDB containers, persistent volumes and local accounts; the private demo login is in ignored `storage/app/dicecloud-demo/access.json` after browser setup. The local test data includes a resolved hosted 2014 SRD library (10,182 entries with private dependency subtrees), alongside the small Fighter demo. Reviewed stale-reference repairs and native-schema validation prepare it for character creation and advancement testing. A Kanka/OCF adapter is not enabled. See the demo documentation for source limits, test results and conversion tools.
+The current character-manager demo is [DiceCloud](docs/dicecloud-demo.md) at **http://127.0.0.1:18084**. Start it with `python3 docker/dicecloud-demo/launch.py`. It uses its own app/MongoDB containers, persistent volumes and local accounts; the private demo login is in ignored `storage/app/dicecloud-demo/access.json` after browser setup. The local test data includes a resolved hosted 2014 SRD library (10,182 entries with private dependency subtrees), alongside the small Fighter demo. Reviewed stale-reference repairs and native-schema validation prepare it for character creation and advancement testing. Outbound Kanka publication is not enabled. See the demo documentation for source limits, test results and conversion tools.
 
 
 A private Kanka character test bridge also exercises native Ranger advancement and creates a reusable campaign Satyr library. It preserves unresolved source choices for review; campaign data stays local. See [import workflow and limits](docs/dicecloud-demo.md#private-kanka-ranger-advancement-test).

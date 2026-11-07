@@ -14,6 +14,8 @@ WORKDIR /build/output/bundle/programs/server
 RUN npm install --production --no-audit --no-fund encoding@0.1.13
 COPY .demo-patches/patch-library-copy.cjs /build/patch-library-copy.cjs
 RUN node /build/patch-library-copy.cjs /build/output/bundle/programs/server/app/app.js
+COPY .demo-patches/patch-native.cjs /build/patch-native.cjs
+RUN node /build/patch-native.cjs /build/output/bundle/programs/server/app/app.js
 
 FROM node:14.21.3-bullseye@sha256:c0bff0d29a742f40650d5f0305dd581351c10954e6cb6676fc96f47590b9666e
 LABEL org.opencontainers.image.source="https://github.com/ThaumRystra/DiceCloud" \

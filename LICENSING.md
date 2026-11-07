@@ -6,7 +6,7 @@ Kenka-SRD-5.1 combines components with separate licenses. Publishing this fork d
 
 The upstream application is **source available**, licensed by Owlchester SNC under the exact terms in [LICENSE](LICENSE). That file is preserved verbatim from upstream tag `3.17`, commit `cf968d129247af92418e3ecb111904e5165464c0`.
 
-The upstream license file includes the **Commons Clause License Condition v1.0**, including its restriction on selling the software as defined there. This repository does not replace that notice with an MIT, GPL, or other license. Newly authored application, configuration, and documentation changes in this fork are provided under those same upstream terms. Existing third-party notices remain applicable.
+The upstream license file includes the **Commons Clause License Condition v1.0**, including its restriction on selling the software as defined there. This repository does not replace that notice with an MIT, GPL, or other license. Newly authored application, configuration, and documentation changes in this fork are provided under those same upstream terms, except for explicitly licensed extensions described below. Existing third-party notices remain applicable.
 
 Upstream source: https://github.com/owlchester/kanka
 
@@ -42,6 +42,8 @@ The rules text is licensed separately from the Kanka application. No Monster Man
 ## Dependencies and container images
 
 The optional DiceCloud demo builds upstream GPL-3.0 code from a pinned source revision. Its upstream license is retained in the image; local Docker compatibility changes are included in this repository. The small Fighter evaluation library in `docker/dicecloud-demo/demo-data.mjs` derives its rules content from SRD 5.1 under CC BY 4.0 with the attribution above. It does not contain hosted/community DiceCloud libraries or private campaign characters. Private demo accounts and generated library state are excluded from Git. [DiceCloud source and license](https://github.com/ThaumRystra/DiceCloud).
+
+The native DiceCloud–Dungeon Revealer integration files under `docker/dc-dr-demo/` are separately licensed **GPL-3.0-only**, with the complete license in [docker/dc-dr-demo/LICENSE](docker/dc-dr-demo/LICENSE). This explicit exception covers the DiceCloud runtime extension and version-pinned gameplay patches; it does not relicense Kanka or remove Commons Clause restrictions from the Kanka application. DiceCloud retains its GPL notices, and Dungeon Revealer retains its upstream ISC/dependency notices. The demo map, artwork, private configuration and native character snapshots are not distributed in this directory.
 
 The optional PCGen browser demo downloads an official pinned PCGen portable archive at launch. PCGen code carries LGPL-2.1-or-later notices, while its game datasets and runtime/dependencies have separate terms, including the SRD conversion's OGL notice. The demo uses a separate GPL-3.0 Webtop image. Preserve both projects' notices when distributing their images/binaries; no PCGen conversion data is assumed to be CC-BY simply because the original SRD is separately available under CC-BY. Downloaded binaries, character saves, credentials and browser-session data are excluded from this public repository. [PCGen source/license](https://github.com/PCGen/pcgen), [Webtop source/license](https://github.com/linuxserver/docker-webtop).
 
