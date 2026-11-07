@@ -114,7 +114,7 @@ During rolling/active combat, player actions outside their turn pause for GM app
 
 Player movement is limited to their own living PC and, during combat, to that PC's turn. The map refreshes its movement policy, and the DR REST route verifies the authenticated DiceCloud permission on every player move. GM movement bypasses the turn gate. Outside combat, owned living-PC movement is free, subject to DR movable/locked flags. Distance/speed budgets remain manual.
 
-The left navigation button uses a chevron. The combat feed header has a separate pop-out/dock chevron; the floating feed can be dragged by its header and resized. The feed starts docked and dark grey. These controls preserve the full-screen map and native character/action UI.
+The left navigation button uses a hamburger. The combat feed header has a separate pop-out/dock chevron; the floating feed can be dragged by its header and resized. The feed starts docked and dark grey. These controls preserve the full-screen map and native character/action UI.
 
 `native-combat.cjs` persists coordination in `nativeCombatState`, `nativeCombatRequests` and `nativeCombatPermits` in the existing MongoDB. HP and mechanical results remain native DiceCloud data. Kanka stays read-only. Rebuild using `python3 docker/dc-dr-demo/launch.py` after changing the compiled client hook; ordinary mounted coordinator/UI changes use `launch-tabletop.py`. The map service now shares the adapter version environment so its permission checks restart with server updates.
 
@@ -122,3 +122,16 @@ Run `python3 docker/dc-dr-demo/check.py --native-combat` when the demo is idle. 
 
 
 The pinned upstream offline worker cached live JSON independently of HTTP cache headers. The native deployment serves `native-service-worker.js` at `/sw.js`: authenticated requests, all API routes and mounted integration assets bypass its cache; old MSW caches are removed on activation, while normal public asset/offline behavior is retained. Combat/map reads also use network-only fetches with unique request URLs while an older worker is being replaced. The coordinator requests a worker update on load and refreshes immediately when a tab regains focus. The browser regression verifies that no API responses remain in the worker cache.
+
+
+### Floating windows, map tools and direct targeting
+
+Turn order floats over the map. Drag its dotted header grip to reposition it, resize its lower corner, or use the chevron to minimize it. Position is remembered in the browser. The combat feed independently pops out/docks and collapses/reopens. GM visibility tools sit above drawing and map/layer tools on the right; their popouts and form fields use the same dark grey scheme. A pinned feed leaves space for tools and open settings.
+
+During native target selection, click a map token or a top character card. Eligible cards show a reticle; selected cards and token labels highlight the target. Single-target actions continue through DiceCloud automatically; multiple-target actions retain the native Continue button. Token dragging pauses during target selection.
+
+Map labels and cards use Good green (>50% HP), Not Good yellow (>25–50%), Bad red (>0–25%) and Down dark red (zero/negative HP), plus matching native condition chips. Down tokens rotate 90 degrees; healing restores upright. Native action logs show health after resolution and highlight hit/miss, natural 20 green and natural 1 red. Existing historical logs retain their original information.
+
+The prepared map starts with its 50px grid enabled for GM and players. Small/Medium tokens are one cell, Large two, Huge three and Gargantuan four; Tiny tokens are half a cell. This migration runs once, preserving later manual sizes/settings. New token defaults are 50px with compact labels.
+
+Run `python3 docker/dc-dr-demo/check.py --native-layout` for layout/target-adapter checks that leave native combat stats and turn order unchanged. Run `vendor/bin/sail node --test docker/dc-dr-demo/token-status.test.cjs docker/dc-dr-demo/token-poses.test.cjs` for focused health/rotation tests.

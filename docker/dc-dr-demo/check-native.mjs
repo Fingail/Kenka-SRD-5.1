@@ -30,7 +30,7 @@ try{
  await page.locator('[data-id="tabletop-action-card"]').waitFor();
  await page.locator('[data-id="tabletop-action-card"] [data-id="do-action-button"]').click();
  await page.locator('.choice-input').waitFor();
- await page.locator('.choice-input').getByText('Black Bear',{exact:true}).click();
+ await page.locator('.tabletop-creature-card.dice-available-target').filter({has:page.getByText('Black Bear',{exact:true})}).click();
  const roll=page.locator('#roll-hex');await roll.waitFor();await roll.click();
  await page.getByRole('button',{name:'Done',exact:true}).waitFor({timeout:30000});await page.getByRole('button',{name:'Done',exact:true}).click();
  await page.waitForFunction(n=>document.querySelectorAll('.stream-entry').length>n,previousLogs,{timeout:30000});
