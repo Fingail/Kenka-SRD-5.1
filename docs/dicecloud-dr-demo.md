@@ -1,4 +1,6 @@
-# Native DiceCloud + Dungeon Revealer demo
+# DiceCloud + Dungeon Revealer evaluation
+
+**Current deployment:** use the [native DiceCloud interface](#native-dicecloud-interface-current-demo). The custom `/dc-dr/` and earlier `/kanka-tabletop/` shells described below are retained as historical documentation and are disabled in the active configuration.
 
 Open **http://127.0.0.1:18084/dc-dr/**. Use the existing local DiceCloud GM account; its credentials remain in ignored `storage/app/dicecloud-demo/access.json`. A separate player account is recorded in ignored `storage/app/dc-dr-demo/access.json`. Use a second browser profile for the player.
 
@@ -78,3 +80,23 @@ Preparation reads the local Kanka quest and NPC definitions using the existing a
 The launcher combines `compose.dicecloud-demo.yaml`, `compose.dc-dr-demo.yaml` and `compose.kanka-tabletop.yaml`, without rebuilding the already tested image. Include all three files for routine restarts. The older integration launcher includes the new overlay automatically once its private configuration exists. The base launcher alone disables integrated routes; the bridge ignores an additional configuration that is not mounted. Private configuration, quest snapshot and access-file pointers live in ignored `storage/app/kanka-tabletop/`. GM/player accounts are the existing demo accounts; no extra login is required.
 
 The bridge registers each configured tabletop under its own route, shares collection handles, and scopes action replay, action continuation and approvals to the requested room. Each map server sends player movement checks to its matching room. API validation confirms distinct tabletop/actor IDs and map origins, unchanged original encounter revision after new-table tests, and rejected cross-table action replay. Browser checks cover the native-list redirect, Kanka link, hidden duplicate DR chat, token selection, battles, popouts and player privacy. Policy and feature limits are the same as the native demo above. Add the new map volume and private configuration to backups.
+
+
+## Native DiceCloud interface — current demo
+
+Open **http://127.0.0.1:18084/kanka-tabletop/**; it redirects to the native **Renovar — Native DiceCloud tabletop** entry. Sign in with the existing local DiceCloud GM or player account. This is the original DiceCloud tabletop UI, with creature cards, the bottom selected-character action bar, native targeting/advantage/action dialogs and the native shared roll log. The small `native-ui.js` adapter embeds DR in DiceCloud's existing empty map area and forwards token selection into the native component. DR's duplicate chat/sidebar and token-properties editor remain hidden.
+
+```bash
+python3 docker/dc-dr-demo/launch-tabletop.py
+python3 docker/dc-dr-demo/check.py --native
+```
+
+The deployment uses the existing DiceCloud/MongoDB services and the map service at loopback port 18086. `DC_DR_CONFIG` now selects private `storage/app/kanka-tabletop/native-config.json`, mode `native`. The previous custom room/action/approval routes, DDP action blockers, player-publication override and HP/rotation synchronization loop are not registered. The old port-18085 map service is stopped by the launcher. Existing custom-room records and code are preserved for reference, not used by this table.
+
+Initial preparation reuses the reviewed Kanka-derived encounter inputs and clones fresh native actors: Lux, bear, dragon and eight Kobolds. No unlimited demo potion action or custom death/initiative/turn workflow is added. Imported attack damage is placed under DiceCloud's native **On hit** branches, preserving existing library branches. Native actions use the app's standard `actions.insertAction`/`actions.runAction` methods and native logs/properties. Existing pinned upstream compatibility fixes remain; no new parallel combat engine is introduced.
+
+`native-tabletop.cjs` only seeds the prepared data, authenticates map access, serves the embedding script and redirects the friendly entry URL. `/api/map` returns permitted map role/credentials and token-to-creature mappings, not combat state. The DR adapter bypasses its former DiceCloud turn gate in native mode and uses ordinary DR role/movable-token settings. The native sharing model exposes NPC read data to the demo player for client action evaluation; GM ownership still controls editing. The former custom NPC health privacy and out-of-turn approval rules do not apply.
+
+The browser check verifies eleven native cards, GM/player access, native selection/action/target/roll dialogs, damage consistent with hit/miss, native shared log, the embedded map, and absence of the old custom controls and unlimited potion action. Screenshots/results are private `native-gm.png`, `native-player.png` and `native-result.json`. The test restores the bear's HP through the normal DiceCloud property method. Other advanced actions/spells are not fully validated in the native UI; use this as an interface evaluation rather than a feature-parity build.
+
+Kanka remains read-only; reimport/refresh and outbound publication remain future work. Persistence/backups still include MongoDB/files, the port-18086 DR volume and matching private configuration. Use all three Compose files for restarts; `launch-tabletop.py` is the preferred entrypoint. The extension retains its directory-local GPL-3.0-only license.

@@ -93,7 +93,7 @@ Meteor.startup(async function () {
     await native(()=>renewDocIds({docArray:nodes}));
     for(const node of nodes){node.root={collection:'creatures',id};node.dirty=true;await P.insertAsync(node);}
    }else{
-    id=await C.insertAsync({name:profile.name,type:'npc',owner:cfg.gmUserId,writers:[],readers:[],public:false,tabletopId:tid,settings:{},dirty:true,allowedLibraries:[],allowedLibraryCollections:[]});
+    id=await C.insertAsync({name:profile.name,type:'npc',owner:cfg.gmUserId,writers:[],readers:cfg.mode==='native'?[player._id]:[],public:false,tabletopId:tid,settings:{},dirty:true,allowedLibraries:[],allowedLibraryCollections:[]});
     const s=profile.template.stats;
     for(const [key,name]of Object.entries({str:'strength',dex:'dexterity',con:'constitution',int:'intelligence',wis:'wisdom',cha:'charisma'}))await add(cfg.gmUserId,id,{type:'attribute',name:name[0].toUpperCase()+name.slice(1),variableName:name,attributeType:'ability',baseValue:{calculation:String(s.abilities[key])}});
     for(const [key,name,type,value]of [['hitPoints','Hit points','healthBar',s.hp_max],['armor','Armor class','stat',s.ac],['speed','Speed','stat',s.speed_ft],['proficiencyBonus','Proficiency bonus','modifier',s.proficiency_bonus||2]])await add(cfg.gmUserId,id,{type:'attribute',name,variableName:key,attributeType:type,baseValue:{calculation:String(value)}});
@@ -111,10 +111,24 @@ Meteor.startup(async function () {
    room.profiles.push({...profile,template:undefined,creatureId:id,ownerId:profile.kind==='pc'?player._id:cfg.gmUserId});
   }
   const pc=room.profiles.find(p=>p.kind==='pc');
+  if(cfg.mode!=='native'){
   const potion=await add(player._id,pc.creatureId,{type:'action',name:'Potion of Healing (demo ∞)',actionType:'action',target:'singleTarget',summary:{text:'Demo supply. Heal any selected creature, including one at zero HP.'}});
   await add(player._id,pc.creatureId,{type:'damage',name:'Potion healing',damageType:'healing',amount:{calculation:'2d4+2'},target:'target'},potion);
   await native(()=>compute(pc.creatureId));
+  }
   room.schemaVersion=4;await R.insertAsync(room);await event(room,'notice',{text:'Separate demo created. DiceCloud owns combat; the copied DR scene owns map state.'});return room;
+ }
+ if(cfg.mode==='native'){
+  const ready=seed().then(async room=>{
+   // Imported flat attacks need DiceCloud's native On Hit branch. Preserve
+   // existing library branches; this is a one-time property-graph conversion.
+   for(const p of room.profiles){const rows=await props(p.creatureId);for(const attack of rows.filter(x=>x.type==='action'&&x.attackRoll&&x.attackRoll.calculation)){
+    const children=rows.filter(x=>x.parentId===attack._id&&x.type==='damage');if(!children.length)continue;
+    const branch=await add(p.ownerId,p.creatureId,{type:'branch',name:'On hit',branchType:'hit'},attack._id);
+    await P.updateAsync({_id:{$in:children.map(x=>x._id)}},{$set:{parentId:branch,dirty:true}},{multi:true});
+   }await native(()=>rebuildNestedSets(P,p.creatureId));await native(()=>compute(p.creatureId));}
+   return room;
+  });require('/opt/dc-dr-assets/native-tabletop.cjs')({Meteor,Package,cfg,ready,context});return;
  }
  for(const method of ['actions.insertAction','actions.runAction']){
   const original=Meteor.server.method_handlers[method];

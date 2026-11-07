@@ -7,6 +7,7 @@ const {getEnv}=require('/usr/src/app/server-build/env');
 bootstrapServer(getEnv(process.env)).then(({app,httpServer})=>{
  const router=express.Router();const reply=(res,status,data)=>{res.statusCode=status;res.setHeader('Content-Type','application/json');res.end(JSON.stringify(data));};const serve=(res,type,path)=>{res.setHeader('Content-Type',type);res.setHeader('Cache-Control','no-store');res.end(fs.readFileSync(path));};
  router.patch('/api/map/:mapId/token/:tokenId',express.json({limit:'16kb'}),async(req,res,next)=>{
+  if(process.env.DC_DR_NATIVE==='1')return next();
   const credential=(req.headers.authorization||'').replace(/^Bearer /,'')||new URL(req.originalUrl,'http://local').searchParams.get('authorization');
   if(credential===process.env.DM_PASSWORD)return next();
   if(credential!==process.env.PC_PASSWORD)return reply(res,401,{error:{message:'DR authentication required'}});
@@ -16,7 +17,7 @@ bootstrapServer(getEnv(process.env)).then(({app,httpServer})=>{
    if(status>=200&&status<300)return next();return reply(res,status,{error:{message:'Move only your PC on its active turn.'}});
   }catch{return reply(res,503,{error:{message:'DiceCloud movement authorization unavailable.'}});}
  });
- router.get('/dc-dr-map-bridge.js',(req,res)=>{res.setHeader('Content-Type','application/javascript');res.setHeader('Cache-Control','no-store');res.end(fs.readFileSync('/usr/src/app/dc-dr-map-bridge.js','utf8').split('__DC_DR_ROUTE__').join(process.env.DC_DR_ROUTE||'/dc-dr'));});
+ router.get('/dc-dr-map-bridge.js',(req,res)=>{res.setHeader('Content-Type','application/javascript');res.setHeader('Cache-Control','no-store');res.end(fs.readFileSync(process.env.DC_DR_NATIVE==='1'?'/usr/src/app/native-map-bridge.js':'/usr/src/app/dc-dr-map-bridge.js','utf8').split('__DC_DR_ROUTE__').join(process.env.DC_DR_ROUTE||'/dc-dr'));});
  router.get(['/','/dm'],(req,res)=>serve(res,'text/html;charset=utf-8','/usr/src/app/build/index.html'));
  app.use(router);app._router.stack.unshift(app._router.stack.pop());httpServer.listen(Number(process.env.PORT||3000),'0.0.0.0');
 }).catch(e=>{console.error(e.message);process.exit(1);});

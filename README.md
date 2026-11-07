@@ -70,15 +70,11 @@ The integration provides:
 
 The handler uses pinned Open Character packages for supported calculations; it is not a complete 5e rules engine. Range, movement budgets, concentration, duration expiry and unsupported condition mechanics require GM adjudication. Native DR accounts use shared GM/player credentials, without individual character ownership. See [operations and verification](docs/ocf-dr-integration-demo.md) and [engineering handoff](engineering%20handoff.md).
 
-## Kanka tabletop
+## Native DiceCloud tabletop
 
-Open **[Renovar — Kanka tabletop](http://127.0.0.1:18084/kanka-tabletop/)** for the focused Kanka/DiceCloud/DR view. Kanka supplies read-only encounter references, DiceCloud supplies battle controls and persistent stats, and a separate DR instance on port 18086 supplies maps. It has its own native tabletop, cloned actors, encounter state and map volume; the earlier demo remains available. DR's duplicate chat/sidebar and token-properties editor are hidden. Start with `python3 docker/dc-dr-demo/launch-tabletop.py` after the existing demo prerequisites are prepared. See [operations and limits](docs/dicecloud-dr-demo.md#focused-kanka-tabletop).
+Open **[Renovar — Native DiceCloud tabletop](http://127.0.0.1:18084/kanka-tabletop/)**. This now uses DiceCloud's own creature cards, selected-character action bar, targeting dialogs, dice controls and roll log. A small adapter embeds the DR map; Kanka supplies read-only source data and the quest link. Launch with `python3 docker/dc-dr-demo/launch-tabletop.py` after the existing private fixtures are prepared.
 
-## DiceCloud + DR gameplay demo
-
-The [native DiceCloud/DR integration](docs/dicecloud-dr-demo.md) is available at **http://127.0.0.1:18084/dc-dr/**. Launch with `python3 docker/dc-dr-demo/launch.py`. DiceCloud resolves native actions and stores character/combat state; a separate copied DR map runs on port 18085. This path does not require OCF during gameplay and leaves the original port-18083 OCF demo available.
-
-The prepared encounter includes cloned Lux, Black Bear, Adult Gold Dragon and eight Kobolds. It supports token-selected sheets, attack/heal targeting, native rolls/saves/damage, conditions, initiative, player turn approval/movement limits, death saves, health indicators and a shared log with independent sheet/log popouts. GM credentials remain in the existing private DiceCloud access file; separate player access is in ignored `storage/app/dc-dr-demo/access.json`. Area geometry, full condition automation and some advanced 5e mechanics still require GM adjudication. Kanka publication and a new Dice campaign remain planned.
+The previous custom combat shell, turn approvals, death workflows and health-band UI are disabled in this deployment. Its code/data remain available for later reference; it is not the active gameplay path. See [native tabletop operations](docs/dicecloud-dr-demo.md#native-dicecloud-interface-current-demo).
 
 ## DiceCloud character advancement demo
 
