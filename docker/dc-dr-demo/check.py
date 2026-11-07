@@ -8,6 +8,6 @@ script='check-browser.mjs' if '--browser' in sys.argv else 'check-api.mjs'
 subprocess.run(['docker','run','--rm','--user','1000:1000','--network','host','--ipc','host',
  '-v',str(root/'tools/ocf-handler')+':/work:ro',
  '-v',str(root/'docker/dc-dr-demo')+':/demo-tools:ro',
- '-v',str(root/'storage/app/dc-dr-demo')+':/test-data',
+ '-v',str(root/('storage/app/kanka-tabletop' if '--tabletop' in sys.argv else 'storage/app/dc-dr-demo'))+':/test-data',
  '-v',str(root/'storage/app/dicecloud-demo/access.json')+':/gm-access.json:ro',
  'mcr.microsoft.com/playwright:v1.65.0-noble','node','/demo-tools/'+script],check=True)

@@ -70,6 +70,10 @@ The integration provides:
 
 The handler uses pinned Open Character packages for supported calculations; it is not a complete 5e rules engine. Range, movement budgets, concentration, duration expiry and unsupported condition mechanics require GM adjudication. Native DR accounts use shared GM/player credentials, without individual character ownership. See [operations and verification](docs/ocf-dr-integration-demo.md) and [engineering handoff](engineering%20handoff.md).
 
+## Kanka tabletop
+
+Open **[Renovar — Kanka tabletop](http://127.0.0.1:18084/kanka-tabletop/)** for the focused Kanka/DiceCloud/DR view. Kanka supplies read-only encounter references, DiceCloud supplies battle controls and persistent stats, and a separate DR instance on port 18086 supplies maps. It has its own native tabletop, cloned actors, encounter state and map volume; the earlier demo remains available. DR's duplicate chat/sidebar and token-properties editor are hidden. Start with `python3 docker/dc-dr-demo/launch-tabletop.py` after the existing demo prerequisites are prepared. See [operations and limits](docs/dicecloud-dr-demo.md#focused-kanka-tabletop).
+
 ## DiceCloud + DR gameplay demo
 
 The [native DiceCloud/DR integration](docs/dicecloud-dr-demo.md) is available at **http://127.0.0.1:18084/dc-dr/**. Launch with `python3 docker/dc-dr-demo/launch.py`. DiceCloud resolves native actions and stores character/combat state; a separate copied DR map runs on port 18085. This path does not require OCF during gameplay and leaves the original port-18083 OCF demo available.

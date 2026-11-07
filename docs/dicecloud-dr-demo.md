@@ -61,3 +61,20 @@ Range, line of sight and cone/area placement are chosen by the GM on the map; se
 The native library and imported historical character still have the review flags documented in [DiceCloud evaluation](dicecloud-demo.md). This demo does not resolve missing historical build choices, reconstruct advancement from flat NPC statistics, publish changes to Kanka or replace the original OCF runtime. Native DiceCloud computation is the authority here; the earlier derived combat-JSON/SQLite plan remains an alternative for the OCF demo.
 
 The extension directory is explicitly **GPL-3.0-only**, with its full license in `docker/dc-dr-demo/LICENSE`. Preserve upstream DiceCloud and DR notices and the SRD attribution in [LICENSING.md](../LICENSING.md). Private campaign content and downloaded community libraries are not included in the repository.
+
+
+## Focused Kanka tabletop
+
+**http://127.0.0.1:18084/kanka-tabletop/** opens the new **Renovar — Kanka tabletop**. It also appears in the native DiceCloud tabletop list; selecting that entry opens the focused view. It reuses local DiceCloud accounts, its existing MongoDB and uploaded files, with a distinct tabletop/room and fresh native combatant copies. Its separate DR service binds loopback port **18086** and persists in `kenka-dicecloud-demo_kanka-tabletop-data`. Kanka quest and character/creature links are available from the battle interface. Native DR chat/sidebar and token-properties editing are hidden in this map-only presentation. Map/fog/grid tools remain available.
+
+```bash
+python3 docker/dc-dr-demo/launch-tabletop.py
+python3 docker/dc-dr-demo/check.py --tabletop
+python3 docker/dc-dr-demo/check.py --tabletop --browser
+```
+
+Preparation reads the local Kanka quest and NPC definitions using the existing allowlisted GET-only client/compiler, clones the already reviewed native Lux build and copies the original DR map volume read-only. This still requires the prepared workstation fixtures described above; it is not an arbitrary quest importer. Kanka remains read-only. Character advancements and subsequent source edits do not automatically refresh this saved encounter.
+
+The launcher combines `compose.dicecloud-demo.yaml`, `compose.dc-dr-demo.yaml` and `compose.kanka-tabletop.yaml`, without rebuilding the already tested image. Include all three files for routine restarts. The older integration launcher includes the new overlay automatically once its private configuration exists. The base launcher alone disables integrated routes; the bridge ignores an additional configuration that is not mounted. Private configuration, quest snapshot and access-file pointers live in ignored `storage/app/kanka-tabletop/`. GM/player accounts are the existing demo accounts; no extra login is required.
+
+The bridge registers each configured tabletop under its own route, shares collection handles, and scopes action replay, action continuation and approvals to the requested room. Each map server sends player movement checks to its matching room. API validation confirms distinct tabletop/actor IDs and map origins, unchanged original encounter revision after new-table tests, and rejected cross-table action replay. Browser checks cover the native-list redirect, Kanka link, hidden duplicate DR chat, token selection, battles, popouts and player privacy. Policy and feature limits are the same as the native demo above. Add the new map volume and private configuration to backups.

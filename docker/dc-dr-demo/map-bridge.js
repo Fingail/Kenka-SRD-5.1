@@ -18,5 +18,5 @@
  window.addEventListener('ocf:token',event=>{const id=event.detail?.tokenId,now=Date.now();if(id===lastToken&&now-lastTime<150)return;lastToken=id;lastTime=now;send({type:'dc-dr:select',tokenId:id});});
  send({type:'dc-dr:ready'});
  if(window.parent!==window)return;
- const banner=document.createElement('a');banner.href=parentOrigin+'/dc-dr/';banner.textContent='DiceCloud encounter';Object.assign(banner.style,{position:'fixed',left:'80px',top:'12px',zIndex:3000,background:'#13243b',color:'#fff',padding:'8px',borderRadius:'6px',font:'14px system-ui'});document.body.append(banner);
+ const banner=document.createElement('a');banner.href=parentOrigin+'__DC_DR_ROUTE__/';banner.textContent='DiceCloud encounter';Object.assign(banner.style,{position:'fixed',left:'80px',top:'12px',zIndex:3000,background:'#13243b',color:'#fff',padding:'8px',borderRadius:'6px',font:'14px system-ui'});document.body.append(banner);
 })();

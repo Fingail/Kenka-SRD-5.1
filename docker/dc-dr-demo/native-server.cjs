@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Loaded in the pinned Meteor server bundle. Gameplay delegates to DiceCloud's
 // native action engine and property persistence; no OpenCharacter runtime.
+const sharedCollections=new Map();
 module.exports = function (mRequire, globals) {
+ const fs=require("fs"),path=process.env.DC_DR_CONFIG;
+ if(!path||!fs.existsSync(path))return;
+ const primary=JSON.parse(fs.readFileSync(path,"utf8"));
+ for(const cfg of [primary,...(primary.additionalConfigs||[]).filter(p=>fs.existsSync(p)).map(p=>JSON.parse(fs.readFileSync(p,"utf8")))])register(mRequire,globals,cfg);
+};
+function register(mRequire,globals,cfg){
 const {Meteor,Package,Mongo,EJSON,Random}=globals;
 Meteor.startup(async function () {
  const fs=require('fs');
- const configPath=process.env.DC_DR_CONFIG;
- if(!configPath||!fs.existsSync(configPath))return;
- const cfg=JSON.parse(fs.readFileSync(configPath,'utf8'));
+ const route=cfg.route||'/dc-dr';
+ const db=name=>{if(!sharedCollections.has(name))sharedCollections.set(name,new Mongo.Collection(name));return sharedCollections.get(name);};
  const policy=require('/opt/dc-dr-assets/policy.cjs');
  const http=require('http'),crypto=require('crypto');
  const JsonRoutes=Package['simple:json-routes'].JsonRoutes;
@@ -24,11 +30,11 @@ Meteor.startup(async function () {
  const roller=mRequire('/imports/api/engine/action/functions/userInput/getDeterministicDiceRoller.ts').default;
  const {renewDocIds,rebuildNestedSets}=mRequire('/imports/api/parenting/parentingFunctions.ts');
  const nativeInsert=mRequire('/imports/api/creature/creatureProperties/methods/insertProperty.js').default;
- let R=new Mongo.Collection('dcDrRooms');
- let Runs=new Mongo.Collection('dcDrRuns');
- let Events=new Mongo.Collection('dcDrEvents');
- let Effects=new Mongo.Collection('dcDrEffects');
- let Requests=new Mongo.Collection('dcDrRequests');
+ let R=db('dcDrRooms');
+ let Runs=db('dcDrRuns');
+ let Events=db('dcDrEvents');
+ let Effects=db('dcDrEffects');
+ let Requests=db('dcDrRequests');
  const Fiber=require('/opt/dicecloud/programs/server/node_modules/fibers');
  const native=fn=>new Promise((resolve,reject)=>{const run=()=>{try{Promise.resolve(fn()).then(resolve,reject);}catch(e){reject(e);}};if(Fiber.current)run();else Fiber(run).run();});
  const collection=target=>new Proxy(target,{get(object,key){const value=object[key];if(['findOneAsync','insertAsync','updateAsync','removeAsync','upsertAsync'].includes(key))return (...args)=>native(()=>value.apply(object,args));if(key==='find')return (...args)=>{const cursor=value.apply(object,args);return new Proxy(cursor,{get(c,k){if(k==='fetchAsync')return ()=>native(()=>c.fetch());const v=c[k];return typeof v==='function'?v.bind(c):v;}});};return typeof value==='function'?value.bind(object):value;}});
@@ -75,13 +81,13 @@ Meteor.startup(async function () {
   let room=await R.findOneAsync(cfg.instance);if(room){if(!room.schemaVersion||room.schemaVersion<2){for(const p of room.profiles.filter(x=>x.kind!=='pc')){const source=cfg.profiles.find(x=>x.tokenId===p.tokenId);await advanced(source,p.creatureId);await native(()=>compute(p.creatureId));}room.schemaVersion=2;room.revision++;await R.updateAsync(room._id,{$set:{schemaVersion:2,revision:room.revision}});}if(room.schemaVersion<3){for(const p of room.profiles.filter(p=>p.kind==='npc')){for(const buff of (await props(p.creatureId)).filter(x=>x.type==='buff'&&(x.tags||[]).some(t=>t.startsWith('dcdr-save:'))))await P.updateAsync(buff._id,{$addToSet:{tags:'dcdr-origin:'+p.creatureId},$set:{dirty:true}});await native(()=>compute(p.creatureId));}room.schemaVersion=3;room.revision++;await R.updateAsync(room._id,{$set:{schemaVersion:3,revision:room.revision}});}if(room.schemaVersion<4){for(const p of room.profiles.filter(x=>x.kind==='npc')){await defenses(cfg.profiles.find(x=>x.tokenId===p.tokenId),p.creatureId);await native(()=>compute(p.creatureId));}room.schemaVersion=4;room.revision++;await R.updateAsync(room._id,{$set:{schemaVersion:4,revision:room.revision}});}return room;}
   let player=await Users.findOneAsync({username:cfg.player.username});
   if(!player){const id=await native(()=>Accounts.createUser(cfg.player));player=await Users.findOneAsync(id);}
-  const tid=await T.insertAsync({name:'DiceCloud × Dungeon Revealer — Renovar demo',owner:cfg.gmUserId,gameMasters:[cfg.gmUserId],players:[player._id],spectators:[],initiative:{active:false,roundNumber:0}});
+  const tid=await T.insertAsync({name:cfg.name||'DiceCloud × Dungeon Revealer — Renovar demo',owner:cfg.gmUserId,gameMasters:[cfg.gmUserId],players:[player._id],spectators:[],initiative:{active:false,roundNumber:0}});
   room={_id:cfg.instance,tabletopId:tid,playerId:player._id,revision:1,combat:{active:false,phase:'idle',turn:0,round:0,current:null,rolls:[],order:[]},profiles:[],deaths:{},dead:{}};
   for(const profile of cfg.profiles){
    let id;
    if(profile.kind==='pc'){
     const original=await C.findOneAsync(cfg.sourceLuxId);if(!original)bad('Source character missing');
-    const doc=clone(original);delete doc._id;delete doc.computeVersion;doc.name=profile.name+' — DC/DR demo';doc.owner=player._id;doc.writers=[cfg.gmUserId];doc.readers=[];doc.public=false;doc.tabletopId=tid;doc.dirty=true;
+    const doc=clone(original);delete doc._id;delete doc.computeVersion;doc.name=profile.name+(cfg.characterSuffix||' — DC/DR demo');doc.owner=player._id;doc.writers=[cfg.gmUserId];doc.readers=[];doc.public=false;doc.tabletopId=tid;doc.dirty=true;
     id=await C.insertAsync(doc);
     const nodes=clone(await props(original._id));
     await native(()=>renewDocIds({docArray:nodes}));
@@ -141,7 +147,7 @@ Meteor.startup(async function () {
   const effects=await Effects.find({roomId:ctx.room._id,creatureId:p.creatureId}).fetchAsync();
   const buffs=liveBuffs(ps).map(x=>({id:x._id,name:x.name,save:(effects.find(e=>e.buffId===x._id)||{}).save||saveFor(x),description:own?(x.description&&x.description.text||''):undefined}));
   const saved=ctx.room.deaths[p.creatureId]||{};
-  const result={id:p.creatureId,tokenId:p.tokenId,name:p.name,kind:p.kind,own,health,effects:buffs,down:h.value<=0,dead:!!ctx.room.dead[p.creatureId]||!!saved.dead||(p.kind==='object'&&h.value<=0),canMove:policy.canMove(ctx.userId,p,ctx.room,ctx.gm)&&(ctx.gm||h.value>0),death:own?saved:undefined};
+  const result={id:p.creatureId,tokenId:p.tokenId,name:p.name,kind:p.kind,sourceUrl:p.sourceUrl,own,health,effects:buffs,down:h.value<=0,dead:!!ctx.room.dead[p.creatureId]||!!saved.dead||(p.kind==='object'&&h.value<=0),canMove:policy.canMove(ctx.userId,p,ctx.room,ctx.gm)&&(ctx.gm||h.value>0),death:own?saved:undefined};
   if(own){result.hp=h.value;result.hpMax=h.total;result.ac=a(ps,'armor')&&a(ps,'armor').value;result.speed=a(ps,'speed')&&a(ps,'speed').value;
    result.abilities=ps.filter(x=>x.type==='attribute'&&x.attributeType==='ability'&&!x.inactive).map(x=>({variable:x.variableName,name:x.name,value:x.value,modifier:x.modifier}));
    result.skills=ps.filter(x=>x.type==='skill'&&!x.inactive).map(x=>({variable:x.variableName,name:x.name,value:x.value,ability:x.ability,type:x.skillType}));
@@ -152,7 +158,7 @@ Meteor.startup(async function () {
   return result;
  }
  function publicEvent(e,ctx){if(e.privateGM&&!ctx.gm)return null;if(e.type==='native')return {...e,entries:(e.entries||[]).filter(x=>!(/Health bar|Hit points.*set|set from/i.test((x.name||'')+' '+(x.value||'')))&&(ctx.gm||!/Error/i.test(x.name||''))),health:(e.health||[]).map(h=>ctx.gm||ctx.room.profiles.find(p=>p.creatureId===h.id&&p.ownerId===ctx.userId)?h:{id:h.id,name:h.name,color:h.color,label:h.label})};return e;}
- async function state(ctx){const list=[];for(const p of ctx.room.profiles)if(ctx.gm||p.visible)list.push(await summary(ctx,p));const logs=await Events.find({roomId:ctx.room._id},{sort:{at:-1},limit:100}).fetchAsync();const requests=await Requests.find({roomId:ctx.room._id,status:'pending',...(ctx.gm?{}:{userId:ctx.userId})}).fetchAsync();return {revision:ctx.room.revision,tabletopId:ctx.room.tabletopId,role:ctx.gm?'gm':'player',userId:ctx.userId,combat:ctx.room.combat,creatures:list,events:logs.reverse().map(e=>publicEvent(e,ctx)).filter(Boolean),pendingActions:(await Runs.find({roomId:ctx.room._id,userId:ctx.userId,status:'input'}).fetchAsync()).map(r=>({id:r._id,prompt:r.prompt,input:r.input})),requests:requests.map(x=>({id:x._id,actorId:x.input.actorId,kind:x.input.kind,propertyId:x.input.propertyId,status:x.status})),dr:{origin:cfg.drPublic,url:cfg.drPublic+(ctx.gm?'/dm':''),password:ctx.gm?cfg.drGMPassword:cfg.drPlayerPassword,mapId:cfg.mapId},warnings:['Map distance/line of sight and unsupported feature mechanics remain GM-adjudicated.']};}
+ async function state(ctx){const list=[];for(const p of ctx.room.profiles)if(ctx.gm||p.visible)list.push(await summary(ctx,p));const logs=await Events.find({roomId:ctx.room._id},{sort:{at:-1},limit:100}).fetchAsync();const requests=await Requests.find({roomId:ctx.room._id,status:'pending',...(ctx.gm?{}:{userId:ctx.userId})}).fetchAsync();return {revision:ctx.room.revision,tabletopId:ctx.room.tabletopId,role:ctx.gm?'gm':'player',userId:ctx.userId,combat:ctx.room.combat,creatures:list,events:logs.reverse().map(e=>publicEvent(e,ctx)).filter(Boolean),pendingActions:(await Runs.find({roomId:ctx.room._id,userId:ctx.userId,status:'input'}).fetchAsync()).map(r=>({id:r._id,prompt:r.prompt,input:r.input})),requests:requests.map(x=>({id:x._id,actorId:x.input.actorId,kind:x.input.kind,propertyId:x.input.propertyId,status:x.status})),dr:{origin:cfg.drPublic,url:cfg.drPublic+(ctx.gm?'/dm':''),password:ctx.gm?cfg.drGMPassword:cfg.drPlayerPassword,mapId:cfg.mapId},name:cfg.name||'DiceCloud × DR',kanka:cfg.kanka,mode:cfg.mode||'demo',warnings:['Map distance/line of sight and unsupported feature mechanics remain GM-adjudicated.']};}
  function validateTargets(ctx,targets){if(!Array.isArray(targets)||targets.length>40||targets.some(x=>typeof x!=='string'))bad('Invalid targets');targets.forEach(id=>profile(ctx,id));return [...new Set(targets)];}
  const logsOf=action=>[].concat(...(action.results||[]).map(r=>[].concat(...(r.mutations||[]).map(m=>(m.contents||[]).map(c=>({...c,targetIds:m.targetIds}))))));
  const rollDetails=action=>{const entries=logsOf(action);const value=entries.map(x=>x.value||'').find(x=>/1d20/.test(x)&&/\*\*(-?\d+)\*\*/.test(x))||'';const m=/\*\*(-?\d+)\*\*/.exec(value);const dice=/1d20\s*\[([^\]]+)\]/.exec(value);const natural=dice&&dice[1].replace(/~~[^~]+~~/g,'').match(/\d+/);return {total:m?Number(m[1]):undefined,natural:natural?Number(natural[0]):undefined};};
@@ -224,12 +230,12 @@ Meteor.startup(async function () {
 
  async function synchronize(room){for(const p of room.profiles){const h=hp(await props(p.creatureId));try{await dr('/api/map/'+cfg.mapId+'/token/'+p.tokenId,'PATCH',{rotation:h.value<=0?90:0});}catch(e){console.error('DC/DR map status pending:',e.message);}}}
  async function dispatch(ctx,op,input){
-  if(op==='state')return state(ctx);if(op==='location')return {tabletopId:ctx.room.tabletopId,url:cfg.dcPublic+'/dc-dr/'};
+  if(op==='state')return state(ctx);if(op==='location')return {tabletopId:ctx.room.tabletopId,url:cfg.dcPublic+route+'/'};
   if(op==='move'){const p=ctx.room.profiles.find(x=>x.tokenId===input.tokenId);if(!p||input.mapId!==cfg.mapId||!policy.canMove(ctx.userId,p,ctx.room,ctx.gm)||(!ctx.gm&&hp(await props(p.creatureId)).value<=0))bad('Movement is limited to your active PC turn.',403);return {allowed:true};}
   if(op==='action'){
    if(typeof input.requestId!=='string'||!/^[a-f0-9-]{36}$/.test(input.requestId))bad('An operation UUID is required.');
-   const prior=await Runs.findOneAsync(input.requestId);if(prior){if(prior.userId!==ctx.userId||JSON.stringify(prior.input)!==JSON.stringify(input))bad('Request ID reused with different input',409);return prior.status==='done'?prior.result:prior.status==='input'?{status:'input',id:prior._id,prompt:prior.prompt}:bad('Action already in progress',409);}
-   const existing=await Requests.findOneAsync(input.requestId);if(existing)return {status:existing.status,id:existing._id};
+   const prior=await Runs.findOneAsync(input.requestId);if(prior){if(prior.roomId!==ctx.room._id)bad('Action not found',404);if(prior.userId!==ctx.userId||JSON.stringify(prior.input)!==JSON.stringify(input))bad('Request ID reused with different input',409);return prior.status==='done'?prior.result:prior.status==='input'?{status:'input',id:prior._id,prompt:prior.prompt}:bad('Action already in progress',409);}
+   const existing=await Requests.findOneAsync(input.requestId);if(existing&&existing.roomId!==ctx.room._id)bad('Request not found',404);if(existing)return {status:existing.status,id:existing._id};
    const p=profile(ctx,input.actorId);control(ctx,p);
    if(input.kind==='initiative'&&(!ctx.room.combat.active||ctx.room.combat.phase!=='rolling'))bad('Start combat before rolling initiative.',409);
    if(input.kind==='death_save'&&!ctx.gm&&ctx.room.combat.active&&(ctx.room.deaths[p.creatureId]||{}).lastTurn===(ctx.room.combat.session||'manual')+':'+(ctx.room.combat.turn||0))bad('Death save already rolled this turn.',409);
@@ -240,9 +246,9 @@ Meteor.startup(async function () {
    if(policy.needsApproval(ctx.userId,p,ctx.room,ctx.gm,input.kind)){await Requests.insertAsync({_id:input.requestId,roomId:ctx.room._id,userId:ctx.userId,input,status:'pending'});return {status:'pending',id:input.requestId};}
    return nativeAction(ctx,input);
   }
-  if(op==='continue'){if(typeof input.id!=='string'||!/^[a-f0-9-]{36}$/.test(input.id))bad('Invalid action ID');const run=await Runs.findOneAsync(input.id);if(!run||run.userId!==ctx.userId)bad('Action not found',404);if(run.status==='done')return run.result;run.decisions.push(input.choice);await Runs.updateAsync(run._id,{$set:{decisions:run.decisions}});return continueAction(ctx,run);}
+  if(op==='continue'){if(typeof input.id!=='string'||!/^[a-f0-9-]{36}$/.test(input.id))bad('Invalid action ID');const run=await Runs.findOneAsync(input.id);if(!run||run.roomId!==ctx.room._id||run.userId!==ctx.userId)bad('Action not found',404);if(run.status==='done')return run.result;run.decisions.push(input.choice);await Runs.updateAsync(run._id,{$set:{decisions:run.decisions}});return continueAction(ctx,run);}
   if(op==='approval'){
-   if(!ctx.gm)bad('GM only',403);if(typeof input.id!=='string'||!/^[a-f0-9-]{36}$/.test(input.id))bad('Invalid request ID');const request=await Requests.findOneAsync(input.id);if(!request||request.status!=='pending')bad('Request is no longer pending',409);
+   if(!ctx.gm)bad('GM only',403);if(typeof input.id!=='string'||!/^[a-f0-9-]{36}$/.test(input.id))bad('Invalid request ID');const request=await Requests.findOneAsync(input.id);if(!request||request.roomId!==ctx.room._id||request.status!=='pending')bad('Request is no longer pending',409);
    if(input.approve){const actorCtx={...ctx,userId:request.userId,gm:false};const result=await nativeAction(actorCtx,request.input,{approved:true});await Requests.updateAsync(request._id,{$set:{status:'approved',result}});return result;}await Requests.updateAsync(request._id,{$set:{status:'rejected'}});return {status:'rejected'};
   }
   if(op==='object'){
@@ -259,7 +265,7 @@ Meteor.startup(async function () {
    else if(input.command==='npc_rolls'){if(!ctx.gm)bad('GM only',403);for(const p of ctx.room.profiles.filter(x=>x.kind==='npc'&&!ctx.room.combat.rolls.some(r=>r.creatureId===x.creatureId))){if(hp(await props(p.creatureId)).value<=0)continue;await nativeAction(ctx,{kind:'initiative',actorId:p.creatureId,targetIds:[],requestId:crypto.randomUUID()});}return {status:'done'};}
    else if(input.command==='begin'){if(!ctx.gm)bad('GM only',403);if(!ctx.room.combat.rolls.length)bad('Roll initiative first.');for(const p of ctx.room.profiles){if(p.kind==='object')continue;if(p.kind!=='pc'&&hp(await props(p.creatureId)).value<=0)continue;if(!ctx.room.combat.rolls.some(r=>r.creatureId===p.creatureId))bad(p.name+' still needs initiative.');}ctx.room.combat.order=policy.sortOrder(ctx.room.combat.rolls).map(x=>x.creatureId);ctx.room.combat.phase='playing';ctx.room.combat.current=ctx.room.combat.order[0];}
    else if(input.command==='end'){if(!ctx.gm)bad('GM only',403);ctx.room.combat={active:false,phase:'idle',round:0,current:null,rolls:[],order:[]};}
-   else if(input.command==='next'){const current=profile(ctx,ctx.room.combat.current);control(ctx,current);if(!ctx.gm&&current.kind!=='pc')bad('GM advances NPC turns.',403);if(!ctx.gm){const rows=await props(current.creatureId),meta=await Effects.find({creatureId:current.creatureId}).fetchAsync();for(const buff of liveBuffs(rows)){const save=(meta.find(e=>e.buffId===buff._id)||{}).save||saveFor(buff);if(save&&save.timing==='end of turn'&&save.lastTurn!==(ctx.room.combat.session||'manual')+':'+(ctx.room.combat.turn||0))bad('Resolve end-of-turn saving throws before ending your turn.',409);}}const order=ctx.room.combat.order;let index=order.indexOf(current.creatureId);for(let n=0;n<order.length;n++){index=(index+1)%order.length;if(index===0)ctx.room.combat.round++;const p=profile(ctx,order[index]);if(p.kind==='pc'||hp(await props(p.creatureId)).value>0){ctx.room.combat.current=p.creatureId;ctx.room.combat.turn=(ctx.room.combat.turn||0)+1;break;}}}
+   else if(input.command==='next'){const current=profile(ctx,ctx.room.combat.current);control(ctx,current);if(!ctx.gm&&current.kind!=='pc')bad('GM advances NPC turns.',403);if(!ctx.gm){const rows=await props(current.creatureId),meta=await Effects.find({creatureId:current.creatureId}).fetchAsync();for(const buff of liveBuffs(rows)){const save=(meta.find(e=>e.buffId===buff._id)||{}).save||saveFor(buff);if(save&&save.timing==='end of turn'&&save.lastTurn!==(ctx.room.combat.session||'manual')+':'+(ctx.room.combat.turn||0))bad('Resolve end-of-turn saving throws before ending your turn.',409);}}const order=ctx.room.combat.order;let index=order.indexOf(current.creatureId);for(let n=0;n<order.length;n++){index=(index+1)%order.length;if(index===0)ctx.room.combat.round++;const p=ctx.room.profiles.find(p=>p.creatureId===order[index]);if(!p)bad('Initiative participant missing.',409);if(p.kind==='pc'||hp(await props(p.creatureId)).value>0){ctx.room.combat.current=p.creatureId;ctx.room.combat.turn=(ctx.room.combat.turn||0)+1;break;}}}
    else bad('Unknown combat command');await save(ctx.room);await T.updateAsync(ctx.room.tabletopId,{$set:{initiative:{active:ctx.room.combat.active,roundNumber:ctx.room.combat.round,activeCreature:ctx.room.combat.current||undefined}}});await event(ctx.room,'turn',{text:ctx.room.combat.active?'Turn: '+(ctx.room.profiles.find(p=>p.creatureId===ctx.room.combat.current)||{}).name:'Combat ended; initiative cleared.'});return {status:'done'};
   }
   if(op==='effect'){
@@ -273,12 +279,12 @@ Meteor.startup(async function () {
  }
  async function handler(req,res,op){try{if(!await ready)bad('Demo setup failed; inspect local service logs.',503);const origin=req.headers.origin;if(origin&&origin!==cfg.dcPublic&&origin!==cfg.drPublic)bad('Origin not permitted',403);const ctx=await context(req);const body=req.body||{};const result=op==='state'||op==='move'||op==='location'?await dispatch(ctx,op,body):await serial(()=>dispatch(ctx,op,body));if(result&&result.health&&!ctx.gm)result.health=result.health.map(h=>ctx.room.profiles.some(p=>p.creatureId===h.id&&p.ownerId===ctx.userId)?h:{id:h.id,name:h.name,color:h.color,label:h.label});JsonRoutes.sendResult(res,{data:result});}catch(e){JsonRoutes.sendResult(res,{code:e.status||400,data:{error:String(e.message||e)}});}}
  const WebApp=Package.webapp.WebApp;
- Package.webapp.WebAppInternals.registerBoilerplateDataCallback('dc-dr-nav',(request,data)=>{data.dynamicHead=(data.dynamicHead||'')+'<script src="/dc-dr/nav.js" defer></script>';return true;});
+ Package.webapp.WebAppInternals.registerBoilerplateDataCallback('dc-dr-nav-'+cfg.instance,(request,data)=>{data.dynamicHead=(data.dynamicHead||'')+'<script src="'+route+'/nav.js" defer></script>';return true;});
  WebApp.rawConnectHandlers.use(function(req,res,next){
-  const path=req.url.split('?')[0];if(!path.startsWith('/dc-dr'))return next();
-  if(path==='/dc-dr'){res.statusCode=302;res.setHeader('Location','/dc-dr/');return res.end();}
-  if(req.method==='GET'&&(path==='/dc-dr/'||path==='/dc-dr/client.js'||path==='/dc-dr/nav.js')){res.setHeader('Content-Type',path.endsWith('.js')?'application/javascript':'text/html;charset=utf-8');res.setHeader('Cache-Control','no-store');return res.end(fs.readFileSync('/opt/dc-dr-assets/'+(path.endsWith('nav.js')?'nav.js':path.endsWith('.js')?'client.js':'index.html')));}
-  const op=path.replace('/dc-dr/api/','');
+  const path=req.url.split('?')[0];if(path!==route&&!path.startsWith(route+'/'))return next();
+  if(path===route){res.statusCode=302;res.setHeader('Location',route+'/');return res.end();}
+  if(req.method==='GET'&&(path===route+'/'||path===route+'/client.js'||path===route+'/nav.js')){res.setHeader('Content-Type',path.endsWith('.js')?'application/javascript':'text/html;charset=utf-8');res.setHeader('Cache-Control','no-store');return res.end(fs.readFileSync('/opt/dc-dr-assets/'+(path.endsWith('nav.js')?'nav.js':path.endsWith('.js')?'client.js':'index.html'),'utf8').split('/dc-dr/').join(route+'/'));}
+  const op=path.replace(route+'/api/','');
   if(!['state','move','location','action','continue','approval','combat','effect','death_confirm','object'].includes(op)){res.statusCode=404;return res.end();}
   if(req.method!== ((op==='state'||op==='location')?'GET':'POST')){res.statusCode=405;return res.end();}
   if(req.method==='GET')return handler(req,res,op);
