@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=PCGen — SRD 5.1 demo
+Comment=Create a test character and inspect export formats
+Exec=/usr/local/bin/pcgen-demo
+Icon=/opt/pcgen/lib/PcGen.png
+Terminal=false
+Categories=Game;
+StartupNotify=true

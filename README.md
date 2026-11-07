@@ -40,6 +40,50 @@ vendor/bin/sail artisan setup:meilisearch --no-interaction
 
 The copy includes custom categories, native child records, properties, feature/spell attachments, relationships, pantheon memberships, tags and sidebar links. Its entry IDs and internal links are remapped. Generic icon files are shared. Keep the worker running to finish search indexing. Source-to-copy mappings stay in ignored `storage/app/campaign-copies/`. Private campaign snapshots and imported lore are not part of this repository.
 
+## Dungeon Revealer combat integration
+
+The optional [DR/OCF encounter integration](docs/ocf-dr-integration-demo.md) reads GM-prepared characters, creatures and a quest from local Kanka. Kanka retains lore, rules and notes; the handler stores encounter HP, inventory use, effects, initiative and roll history in its own SQLite volume. Runtime Kanka access is **GET-only** and never writes combat results back.
+
+Start Kanka, create a working campaign and a view-only API token, then launch the separate demo:
+
+```bash
+# First launch only: enter the token without storing it in shell history.
+read -r -s -p "Local Kanka API token: " OCF_KANKA_TOKEN
+export OCF_KANKA_TOKEN
+python3 docker/dungeon-revealer/launch-integration.py
+unset OCF_KANKA_TOKEN
+```
+
+Open **http://127.0.0.1:18083/dm** as GM, **http://127.0.0.1:18083/** as player, or **http://127.0.0.1:18083/ocf-api/ui** to prepare/refresh a quest. Generated access details are in ignored `storage/app/dungeon-revealer-demo/access.json`; the API token stays in ignored `storage/app/ocf-authoring/handler-config.json`. Later launches reuse those files.
+
+The prototype currently allowlists **campaign 2**. Prepare its participant sheets and quest using the [input contract](docs/kanka-encounter-input-format.md); private workstation campaigns, maps, portraits and character exports are not bundled. PC definitions support reviewed JSON overrides; NPCs use Kanka properties/SRD compilation. Source refresh preserves runtime state.
+
+The integration provides:
+
+- One docked character sheet above the right-side combat log, independent popout controls, and token selection that reopens a closed sheet for both roles.
+- Targeted attacks, damage, healing, death saves, zero-HP token rotation, and GM-selected multi-target/save-based actions.
+- Shared initiative, player End turn, GM turn advancement, automatic GM selection of the next NPC, and a fresh roll queue for each battle.
+- Out-of-turn player rolls requiring DM approval and server-enforced player movement limited to the active PC.
+- Persistent named/custom effects, effect-save buttons with configured recovery on success, and GM effect controls.
+- Shared NPC attack/AoE results with dice badges, red/green natural d20 results, damage colors and health-after-action labels. Exact NPC HP and unrelated private rolls remain GM-only.
+- Small token names with health-colored backgrounds and separate colored effect labels beneath them.
+
+The handler uses pinned Open Character packages for supported calculations; it is not a complete 5e rules engine. Range, movement budgets, concentration, duration expiry and unsupported condition mechanics require GM adjudication. Native DR accounts use shared GM/player credentials, without individual character ownership. See [operations and verification](docs/ocf-dr-integration-demo.md) and [engineering handoff](engineering%20handoff.md).
+
+## PCGen browser demo
+
+An optional, isolated PCGen desktop is available through a browser:
+
+```bash
+python3 docker/pcgen-demo/launch.py
+```
+
+Open **https://127.0.0.1:18084** and accept the local self-signed certificate. Read the generated username/password from ignored `storage/app/pcgen-demo/access.json`. The launcher verifies a pinned official Linux archive and starts one pinned Webtop container. Character files and exports persist under ignored `storage/app/pcgen-demo/config/PCGen/`. No Kanka credentials or campaign data are mounted, and there is no automatic PCGen integration or character migration.
+
+The selected PCGen build is a **nightly demonstration build**. Choose its **5e / System Reference Document 5.1** source and create a disposable SRD character to evaluate editing and exports. See [PCGen demo instructions](docs/pcgen-demo.md) for persistence, stop/start, licensing and integration boundaries.
+
+Both demos have dedicated Compose files and project names; the normal Kanka startup does not launch them. The optional [PlanarAlly comparison](docs/planarally-demo.md) is separate; MapTool has been retired.
+
 ## Default services
 
 All ten local runtime services start by default, including mail capture and realtime updates:

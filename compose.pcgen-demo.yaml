@@ -1,0 +1,27 @@
+name: kenka-pcgen-demo
+services:
+  pcgen:
+    image: lscr.io/linuxserver/webtop:ubuntu-xfce@sha256:bd4d30b88c1f7f9b9ebb59454e8de282314466802192ce31c56b3ea5f4dcfbbf
+    env_file:
+      - ./storage/app/pcgen-demo/demo.env
+    environment:
+      TZ: America/Denver
+      TITLE: PCGen — SRD 5.1 demo
+      AUTO_GPU: 'false'
+    ports:
+      - '127.0.0.1:18084:3001'
+    volumes:
+      - ./storage/app/pcgen-demo/config:/config
+      - ./storage/app/pcgen-demo/dist/PcGen:/opt/pcgen:ro
+      - ./docker/pcgen-demo/pcgen-demo.sh:/usr/local/bin/pcgen-demo:ro
+      - ./docker/pcgen-demo/pcgen.desktop:/usr/share/applications/pcgen.desktop:ro
+    shm_size: 1gb
+    mem_limit: 3g
+    cpus: 2
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', "curl -ks -o /dev/null -w '%{http_code}' https://127.0.0.1:3001/ | grep -qE '^(200|401)$$'"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 60s

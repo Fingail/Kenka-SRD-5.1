@@ -1,0 +1,5 @@
+[general]
+admin_user = "demo-gm"
+client_url = "http://127.0.0.1:18082"
+# Register the GM and player accounts, then disable signups and restart.
+allow_signups = true

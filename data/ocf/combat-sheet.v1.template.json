@@ -1,0 +1,24 @@
+{
+  "schema": "kanka-combat-sheet/1",
+  "edition": "5e-2014",
+  "source": {
+    "campaign_id": null,
+    "entity_id": null
+  },
+  "stats": {
+    "ac": null,
+    "hp_max": null,
+    "initiative": null,
+    "speed_ft": null,
+    "proficiency_bonus": null,
+    "abilities": {
+      "str": null,
+      "dex": null,
+      "con": null,
+      "int": null,
+      "wis": null,
+      "cha": null
+    }
+  },
+  "attacks": []
+}
