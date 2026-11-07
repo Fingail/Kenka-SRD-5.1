@@ -135,3 +135,12 @@ Map labels and cards use Good green (>50% HP), Not Good yellow (>25–50%), Bad 
 The prepared map starts with its 50px grid enabled for GM and players. Small/Medium tokens are one cell, Large two, Huge three and Gargantuan four; Tiny tokens are half a cell. This migration runs once, preserving later manual sizes/settings. New token defaults are 50px with compact labels.
 
 Run `python3 docker/dc-dr-demo/check.py --native-layout` for layout/target-adapter checks that leave native combat stats and turn order unchanged. Run `vendor/bin/sail node --test docker/dc-dr-demo/token-status.test.cjs docker/dc-dr-demo/token-poses.test.cjs` for focused health/rotation tests.
+
+
+### Conditions, saves and recurring damage
+
+Each named effect appears once per character. Reapplication consolidates the native buff and its modifiers rather than stacking a duplicate. Different conditions remain independent. Saveable effects have a highlighted status badge. Clicking the status opens that character's effect description, ability/DC, timing and **Roll save** button. Due turn saves open this dialog automatically for the controlling player or GM. A successful save ends the effect when its rule says so; otherwise the condition remains. Each timed save resolves once per turn, and End turn reopens outstanding saves. Clicking a status opens its details without rolling. Out-of-turn player rolls request GM approval before any dice, with one approval per effect roll.
+
+Explicit ongoing damage resolves through DiceCloud, retaining its damage types, resistances/immunities and HP updates. Start/end-turn damage runs at the prescribed turn boundary; damage tied to a save follows that result, including half/no damage when specified. Logs show the result and health afterwards. Weakening Breath itself deals no ongoing damage. Effects without reliable save/damage metadata remain displayed and require source clarification before automation.
+
+Focused checks: `vendor/bin/sail node --test docker/dc-dr-demo/native-effects.test.cjs docker/dc-dr-demo/native-effects-coordinator.test.cjs` and `python3 docker/dc-dr-demo/check.py --native-layout`. The latter verifies prompts with browser-only fixtures; it does not roll saves or apply damage to the running encounter.

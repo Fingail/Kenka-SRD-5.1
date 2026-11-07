@@ -128,7 +128,7 @@ Meteor.startup(async function () {
     await P.updateAsync({_id:{$in:children.map(x=>x._id)}},{$set:{parentId:branch,dirty:true}},{multi:true});
    }await native(()=>rebuildNestedSets(P,p.creatureId));await native(()=>compute(p.creatureId));}
    return room;
-  });require('/opt/dc-dr-assets/native-tabletop.cjs')({Meteor,Package,cfg,ready,context,combatDeps:{C,P,T,EA,Logs,props,native,apply,write,roller,Random,collection,db,liveBuffs}});return;
+  });require('/opt/dc-dr-assets/native-tabletop.cjs')({Meteor,Package,cfg,ready,context,combatDeps:{C,P,T,EA,Logs,props,native,apply,write,roller,Random,collection,db,liveBuffs,compute,add}});return;
  }
  for(const method of ['actions.insertAction','actions.runAction']){
   const original=Meteor.server.method_handlers[method];
