@@ -62,7 +62,7 @@ def main():
     environment = directory / 'demo.env'
     environment.write_text(f"PUID={os.getuid()}\nPGID={os.getgid()}\nCUSTOM_USER={access['username']}\nPASSWORD={access['password']}\n")
     environment.chmod(0o600)
-    for relative in ['config/.config/autostart', 'config/Desktop', 'config/.pcgen', 'config/PCGen/characters', 'config/PCGen/exports']:
+    for relative in ['config/.config/autostart', 'config/Desktop', 'config/.pcgen', 'config/Documents/PCGen/characters', 'config/Documents/PCGen/exports']:
         (directory / relative).mkdir(parents=True, exist_ok=True)
     for relative in ['config/.config/autostart/pcgen.desktop', 'config/Desktop/pcgen.desktop']:
         shutil.copyfile(ROOT / 'docker/pcgen-demo/pcgen.desktop', directory / relative)

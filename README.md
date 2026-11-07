@@ -78,7 +78,7 @@ An optional, isolated PCGen desktop is available through a browser:
 python3 docker/pcgen-demo/launch.py
 ```
 
-Open **https://127.0.0.1:18084** and accept the local self-signed certificate. Read the generated username/password from ignored `storage/app/pcgen-demo/access.json`. The launcher verifies a pinned official Linux archive and starts one pinned Webtop container. Character files and exports persist under ignored `storage/app/pcgen-demo/config/PCGen/`. No Kanka credentials or campaign data are mounted, and there is no automatic PCGen integration or character migration.
+Open **https://127.0.0.1:18084** and accept the local self-signed certificate. Read the generated username/password from ignored `storage/app/pcgen-demo/access.json`. The launcher verifies a pinned official Linux archive and starts one pinned Webtop container. Character files and exports persist under ignored `storage/app/pcgen-demo/config/Documents/PCGen/`. The [OCF export helper](docs/pcgen-character-export.md) reads Kanka to produce native character drafts/reference snapshots and separate battle JSON in quest folders. No Kanka token is mounted into PCGen, and exports never write back to Kanka or change live combat state.
 
 The selected PCGen build is a **nightly demonstration build**. Choose its **5e / System Reference Document 5.1** source and create a disposable SRD character to evaluate editing and exports. See [PCGen demo instructions](docs/pcgen-demo.md) for persistence, stop/start, licensing and integration boundaries.
 
