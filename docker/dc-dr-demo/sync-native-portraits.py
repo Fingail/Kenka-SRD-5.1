@@ -20,6 +20,7 @@ def main():
     helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
     client=helper.Kanka(json.loads((ROOT/'storage/app/ocf-authoring/handler-config.json').read_text()))
     entities={};races={};checked={};plan=[]
+    overrides=json.loads((DATA/'portrait-overrides.json').read_text()) if (DATA/'portrait-overrides.json').exists() else {}
     def image(record):
         if not (record.get('has_custom_image') or record.get('image') or record.get('image_uuid')):return None
         for url in dict.fromkeys([record.get('image_full'),record.get('image_thumb')]):
@@ -38,6 +39,12 @@ def main():
         match=re.search(r'/w/2/entities/(\d+)(?:$|[/?#])',profile.get('sourceUrl',''))
         if not match:continue
         eid=int(match.group(1))
+        local=overrides.get(profile['tokenId']);local=local if isinstance(local,dict) else {'picture':local,'avatarPicture':local}
+        override=image({'has_custom_image':True,'image_full':local.get('picture')})
+        if override:
+            avatar=image({'has_custom_image':True,'image_full':local.get('avatarPicture')}) or override
+            plan.append({'tokenId':profile['tokenId'],'name':profile['name'],'entityId':eid,'picture':override,'avatarPicture':avatar,'artworkSource':'local override'})
+            continue
         if eid not in entities:entities[eid]=client.read('/campaigns/2/entities/'+str(eid))
         entity=entities[eid];child=entity.get('child') or {};url=image(child);origin='character' if entity.get('type')=='character' else 'creature'
         if not url:

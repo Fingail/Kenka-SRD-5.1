@@ -162,3 +162,6 @@ The effect window closes after its roll resolves; the combat feed retains the re
 
 
 Refresh top-bar, selected-character and avatar images from local Kanka with `python3 docker/dc-dr-demo/sync-native-portraits.py`. It uses character/creature images first and linked race artwork when a character has no usable image. Map token artwork stays unchanged. Kanka's local media service supplies the images; source records are read-only. Plans and verification screenshots remain private.
+
+
+For local artwork, run `python3 docker/dc-dr-demo/set-local-portraits.py BEAR.jpg DRAGON.jpg KOBOLD.jpg --bear-avatar BEAR_TOKEN.png --dragon-avatar DRAGON_TOKEN.png --kobold-avatar KOBOLD_TOKEN.png`. Full-size images become portraits and round images become small avatars. Add `--map-tokens` to apply the round art to the corresponding map tokens as well, preserving their positions, sizes, rotations and visibility. This mapping covers the bear, gold dragon and all kobold instances. Private overrides persist and take priority over later Kanka portrait refreshes.
