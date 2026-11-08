@@ -23,6 +23,7 @@ Meteor.startup(async function () {
  let V=mRequire('/imports/api/creature/creatures/CreatureVariables.ts').default;
  let T=mRequire('/imports/api/tabletop/Tabletops.ts').default;
  let Logs=mRequire('/imports/api/creature/log/CreatureLogs.js').default;
+ const privateLogRouter=require('/opt/dc-dr-assets/native-private-logs.cjs')(Logs);
  let EA=mRequire('/imports/api/engine/action/EngineActions.ts').default;
  const apply=mRequire('/imports/api/engine/action/functions/applyAction.ts').default;
  const write=mRequire('/imports/api/engine/action/functions/writeActionResults.ts').default;
@@ -119,16 +120,17 @@ Meteor.startup(async function () {
   room.schemaVersion=4;await R.insertAsync(room);await event(room,'notice',{text:'Separate demo created. DiceCloud owns combat; the copied DR scene owns map state.'});return room;
  }
  if(cfg.mode==='native'){
+  require('/opt/dc-dr-assets/native-action-privacy.cjs')({Meteor,C,T,R,EA,cfg});
   const ready=seed().then(async room=>{
    // Imported flat attacks need DiceCloud's native On Hit branch. Preserve
    // existing library branches; this is a one-time property-graph conversion.
-   for(const p of room.profiles){const rows=await props(p.creatureId);for(const patch of require('/opt/dc-dr-assets/native-ammo.cjs')(rows))await P.updateAsync(patch.id,{$set:{...patch.set,dirty:true}},{selector:{type:rows.find(x=>x._id===patch.id).type}});for(const attack of rows.filter(x=>x.type==='action'&&x.attackRoll&&x.attackRoll.calculation)){
+   for(const p of room.profiles){const rows=await props(p.creatureId);for(const h of rows.filter(x=>x.type==='attribute'&&x.variableName==='hitPoints'&&!x.ignoreLowerLimit))await P.updateAsync(h._id,{$set:{ignoreLowerLimit:true,dirty:true}},{selector:{type:'attribute'}});for(const patch of require('/opt/dc-dr-assets/native-ammo.cjs')(rows))await P.updateAsync(patch.id,{$set:{...patch.set,dirty:true}},{selector:{type:rows.find(x=>x._id===patch.id).type}});for(const attack of rows.filter(x=>x.type==='action'&&x.attackRoll&&x.attackRoll.calculation)){
     const children=rows.filter(x=>x.parentId===attack._id&&x.type==='damage');if(!children.length)continue;
     const branch=await add(p.ownerId,p.creatureId,{type:'branch',name:'On hit',branchType:'hit'},attack._id);
     await P.updateAsync({_id:{$in:children.map(x=>x._id)}},{$set:{parentId:branch,dirty:true}},{multi:true});
    }await native(()=>rebuildNestedSets(P,p.creatureId));await native(()=>compute(p.creatureId));}
    return room;
-  });require('/opt/dc-dr-assets/native-tabletop.cjs')({Meteor,Package,cfg,ready,context,combatDeps:{C,P,T,EA,Logs,props,native,apply,write,roller,Random,collection,db,liveBuffs,compute,add}});return;
+  });require('/opt/dc-dr-assets/native-tabletop.cjs')({Meteor,Package,cfg,ready,context,combatDeps:{privateLogRouter,C,P,T,EA,Logs,props,native,apply,write,roller,Random,collection,db,liveBuffs,compute,add}});return;
  }
  for(const method of ['actions.insertAction','actions.runAction']){
   const original=Meteor.server.method_handlers[method];
