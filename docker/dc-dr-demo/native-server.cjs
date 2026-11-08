@@ -26,6 +26,8 @@ Meteor.startup(async function () {
  const privateLogRouter=require('/opt/dc-dr-assets/native-private-logs.cjs')(Logs);
  let EA=mRequire('/imports/api/engine/action/EngineActions.ts').default;
  const apply=mRequire('/imports/api/engine/action/functions/applyAction.ts').default;
+ const replay=mRequire('/imports/api/engine/action/functions/userInput/getReplayChoicesInputProvider.ts').default;
+ const installLuckyRollHook=fn=>{const previous=globalThis.diceLuckyRoll;globalThis.diceLuckyRoll=async(...args)=>{const result=await fn(...args);return result||(previous?previous(...args):args[2]);};};
  const write=mRequire('/imports/api/engine/action/functions/writeActionResults.ts').default;
  const compute=mRequire('/imports/api/engine/computeCreature.ts').default;
  const roller=mRequire('/imports/api/engine/action/functions/userInput/getDeterministicDiceRoller.ts').default;
@@ -130,7 +132,7 @@ Meteor.startup(async function () {
     await P.updateAsync({_id:{$in:children.map(x=>x._id)}},{$set:{parentId:branch,dirty:true}},{multi:true});
    }await native(()=>rebuildNestedSets(P,p.creatureId));await native(()=>compute(p.creatureId));}
    return room;
-  });require('/opt/dc-dr-assets/native-tabletop.cjs')({Meteor,Package,cfg,ready,context,combatDeps:{privateLogRouter,C,P,T,EA,Logs,props,native,apply,write,roller,Random,collection,db,liveBuffs,compute,add}});return;
+  });require('/opt/dc-dr-assets/native-tabletop.cjs')({Meteor,Package,cfg,ready,context,combatDeps:{replay,clone,installLuckyRollHook,privateLogRouter,C,P,T,EA,Logs,props,native,apply,write,roller,Random,collection,db,liveBuffs,compute,add}});return;
  }
  for(const method of ['actions.insertAction','actions.runAction']){
   const original=Meteor.server.method_handlers[method];
