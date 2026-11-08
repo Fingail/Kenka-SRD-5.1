@@ -153,3 +153,9 @@ Click a top-bar character portrait or the selected bottom-bar portrait to open i
 Click **Inventory** to show the attached inventory. Its chevron detaches the panel; **Attach inventory** docks it again. Equip/unequip and available item-use actions use DiceCloud's own methods and permissions. Items with no defined use action remain references. Players may inspect shared NPC sheets but can act only for characters they control. Out-of-turn rolls retain GM approval; spells retain native slot selection and targeting.
 
 Run `python3 docker/dc-dr-demo/check.py --native-sheet` for the sheet browser checks and `vendor/bin/sail node --test docker/dc-dr-demo/native-sheet-data.test.cjs` for data mapping. The browser check makes one harmless ability roll and verifies unchanged HP, inventory and combat turns.
+
+
+During active combat, the top bar names the current character and highlights a PC's turn and portrait card. The controlling player sees **Your turn**. **End turn** sits above the expanded turn-order list and enables only for that player's active PC; the GM sees **Next turn** for NPCs. Pending turn saves reopen the effect window before advancement. End combat clears the current-turn indicators.
+
+
+The effect window closes after its roll resolves; the combat feed retains the result. Native save-bearing damage (such as Fire Breath) now uses the same corrected shared source in browser and server. Rebuild without interrupting the running table using `python3 docker/dicecloud-demo/launch.py --build-only`, then deploy with `python3 docker/dc-dr-demo/launch-tabletop.py`. `python3 docker/dc-dr-demo/check.py --native-saves` checks multi-target saves and damage using disposable characters outside the encounter.

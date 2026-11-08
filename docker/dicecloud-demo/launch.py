@@ -6,6 +6,7 @@ from pathlib import Path
 import secrets
 import shutil
 import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 REVISION = '88fc9c8321796437017e60e84b9582b5aac44cf1'
@@ -56,6 +57,10 @@ def main():
     for filename in ['mongo.env', 'app.env']:
         (directory / filename).chmod(0o600)
     compose = ['docker', 'compose', '-p', 'kenka-dicecloud-demo', '-f', 'compose.dicecloud-demo.yaml']
+    if '--build-only' in sys.argv:
+        run(*compose, 'build', 'dicecloud')
+        print('DiceCloud image built; running containers preserved.')
+        return
     run(*compose, 'up', '-d', '--wait', '--wait-timeout', '60', 'mongo')
     run(*compose, 'exec', '-T', 'mongo', 'mongosh', '--quiet', '--eval',
         'const uri="mongodb://"+encodeURIComponent(process.env.MONGO_INITDB_ROOT_USERNAME)+":"+encodeURIComponent(process.env.MONGO_INITDB_ROOT_PASSWORD)+"@127.0.0.1:27017/admin";'
