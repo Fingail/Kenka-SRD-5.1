@@ -159,3 +159,6 @@ During active combat, the top bar names the current character and highlights a P
 
 
 The effect window closes after its roll resolves; the combat feed retains the result. Native save-bearing damage (such as Fire Breath) now uses the same corrected shared source in browser and server. Rebuild without interrupting the running table using `python3 docker/dicecloud-demo/launch.py --build-only`, then deploy with `python3 docker/dc-dr-demo/launch-tabletop.py`. `python3 docker/dc-dr-demo/check.py --native-saves` checks multi-target saves and damage using disposable characters outside the encounter.
+
+
+Refresh top-bar, selected-character and avatar images from local Kanka with `python3 docker/dc-dr-demo/sync-native-portraits.py`. It uses character/creature images first and linked race artwork when a character has no usable image. Map token artwork stays unchanged. Kanka's local media service supplies the images; source records are read-only. Plans and verification screenshots remain private.
