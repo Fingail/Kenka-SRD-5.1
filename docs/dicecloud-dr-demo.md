@@ -144,3 +144,12 @@ Each named effect appears once per character. Reapplication consolidates the nat
 Explicit ongoing damage resolves through DiceCloud, retaining its damage types, resistances/immunities and HP updates. Start/end-turn damage runs at the prescribed turn boundary; damage tied to a save follows that result, including half/no damage when specified. Logs show the result and health afterwards. Weakening Breath itself deals no ongoing damage. Effects without reliable save/damage metadata remain displayed and require source clarification before automation.
 
 Focused checks: `vendor/bin/sail node --test docker/dc-dr-demo/native-effects.test.cjs docker/dc-dr-demo/native-effects-coordinator.test.cjs` and `python3 docker/dc-dr-demo/check.py --native-layout`. The latter verifies prompts with browser-only fixtures; it does not roll saves or apply damage to the running encounter.
+
+
+### Floating character sheets and inventory
+
+Click a top-bar character portrait or the selected bottom-bar portrait to open its condensed sheet. Each sheet stays pinned to that character; several can remain open while you select other tokens. Drag the header or resize the corner. The sheet shows current combat stats, ability checks, saving throws, skills/tools, native actions, spells, resources and feature descriptions. Features with defined native actions expose them; passive features remain references. The combat feed uses the same compact text sizing.
+
+Click **Inventory** to show the attached inventory. Its chevron detaches the panel; **Attach inventory** docks it again. Equip/unequip and available item-use actions use DiceCloud's own methods and permissions. Items with no defined use action remain references. Players may inspect shared NPC sheets but can act only for characters they control. Out-of-turn rolls retain GM approval; spells retain native slot selection and targeting.
+
+Run `python3 docker/dc-dr-demo/check.py --native-sheet` for the sheet browser checks and `vendor/bin/sail node --test docker/dc-dr-demo/native-sheet-data.test.cjs` for data mapping. The browser check makes one harmless ability roll and verifies unchanged HP, inventory and combat turns.
