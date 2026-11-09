@@ -295,3 +295,15 @@ The shared source patch threads explicit roll category, actor, target and modifi
 Marks expire after ten combat rounds (one minute outside combat), end if their badges are removed or source/target drops, and yield to native concentration spells. Damage triggers native Constitution saves per hit, including temporary-HP absorption because final damage logs are used. A failed save clears source and target buffs. Custom collections are `nativeAttackFeatureChoices`, `nativeFavoredFoe`, `nativeFavoredFoeDamage`, and `nativeFavoredFoeSaves`. Existing unrelated concentration/spell rules remain GM-adjudicated. Gameplay-managed resources hide manual counters; undeclared resources retain them.
 
 Shared patches require `python3 docker/dicecloud-demo/launch.py --build-only` followed by the tabletop launcher; mounted adapter edits need only the tabletop launcher. Run native-lucky, native-favored-foe, coordinator and sheet-data suites through Sail. The native layout check uses browser-only attack/choice fixtures, verifies no feed post during Lucky choice, resource deduction once, the feature checkbox, manual-counter retention and card sizing. Native-saves verifies metadata reaches real ActionDialog saves and native hit-die/damage/healing behavior on disposable characters. Do not test by consuming active campaign characters' points, HP or marks.
+
+
+## Current tabletop runtime handoff — 2026-11-09
+
+Current DiceCloud/DR implementation lives in private `Fingail/DCDR5e` at commit
+`682c8bc0cac39572580140da011bbc30998cf835`. This PR retains the earlier integration
+snapshot and documents the maintained engine rather than copying private runtime
+code/data into the Kanka fork. See docs/dcdr5e-current-deployment.md for the full
+catalog/selective import, hybrid identity resolution, encounter saves and native
+ownership boundaries. DCDR5e passed 343 native tests and its documented live
+acceptance checks. Kanka application code and deployment behavior are unchanged
+by this handoff update; unrelated race/rules-transfer work remains outside it.

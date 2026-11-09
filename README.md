@@ -40,6 +40,16 @@ vendor/bin/sail artisan setup:meilisearch --no-interaction
 
 The copy includes custom categories, native child records, properties, feature/spell attachments, relationships, pantheon memberships, tags and sidebar links. Its entry IDs and internal links are remapped. Generic icon files are shared. Keep the worker running to finish search indexing. Source-to-copy mappings stay in ignored `storage/app/campaign-copies/`. Private campaign snapshots and imported lore are not part of this repository.
 
+## Current tabletop deployment
+
+The maintained native tabletop is now in the private
+[Fingail/DCDR5e](https://github.com/Fingail/DCDR5e) repository, pinned here to
+commit `682c8bc`. It includes the 317-creature launcher catalog, selective native
+preparation, read-only Kanka identities/local mappings, quest templates and
+checkpoints. See the [current deployment handoff](docs/dcdr5e-current-deployment.md)
+for ownership, operation and validation. The demo sources below are historical;
+use the separate runtime for current tabletop work.
+
 ## Dungeon Revealer combat integration
 
 The optional [DR/OCF encounter integration](docs/ocf-dr-integration-demo.md) reads GM-prepared characters, creatures and a quest from local Kanka. Kanka retains lore, rules and notes; the handler stores encounter HP, inventory use, effects, initiative and roll history in its own SQLite volume. Runtime Kanka access is **GET-only** and never writes combat results back.
