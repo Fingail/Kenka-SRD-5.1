@@ -1,0 +1,25 @@
+name: kenka-planarally-demo
+services:
+  planarally:
+    image: kruptein/planarally:v2026.2@sha256:f3fcc49a25e103696d67b87bf3d294f696b5673867df12ec7cb963d828dcebb6
+    ports:
+      - '127.0.0.1:18082:8000'
+    volumes:
+      - planarally-data:/planarally/data
+      - planarally-assets:/planarally/static/assets
+      - planarally-mods:/planarally/static/mods
+      - ./storage/app/planarally-demo/config.toml:/planarally/data/config.toml:ro
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: 2
+    stop_grace_period: 30s
+    healthcheck:
+      test: ['CMD', 'curl', '--fail', '--silent', 'http://127.0.0.1:8000/']
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+volumes:
+  planarally-data:
+  planarally-assets:
+  planarally-mods:

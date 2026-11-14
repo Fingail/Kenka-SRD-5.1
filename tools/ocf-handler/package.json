@@ -1,0 +1,1 @@
+{"name":"kanka-ocf-encounter-handler","version":"0.1.0","private":true,"type":"module","engines":{"node":">=22"},"scripts":{"start":"node server.mjs","test":"node --test"},"dependencies":{"@opencharacter/5e-srd-5.1":"0.4.0","@opencharacter/engine":"0.4.0"},"devDependencies":{"playwright":"1.65.0"}}

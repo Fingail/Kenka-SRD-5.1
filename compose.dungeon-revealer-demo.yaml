@@ -1,0 +1,61 @@
+name: kenka-dungeon-revealer-demo
+services:
+  dungeon-revealer:
+    image: dungeonrevealer/dungeon-revealer:v1.17.1@sha256:234c13f650e977f6f3a344d9265eef979da59da8a572629db88b5cb448417797
+    ports:
+      - '127.0.0.1:18083:3000'
+    env_file:
+      - ./storage/app/dungeon-revealer-demo/demo.env
+    environment:
+      DATA_DIRECTORY: /usr/src/app/data
+      HOST: 0.0.0.0
+      PORT: '3000'
+    volumes:
+      - dungeon-revealer-data:/usr/src/app/data
+      - ./docker/dungeon-revealer/ocf-server.cjs:/usr/src/app/ocf-server.cjs:ro
+      - ./tools/ocf-handler/bridge.js:/usr/src/app/build/ocf-bridge.js:ro
+      - ./storage/app/dungeon-revealer-demo/overlay/index.html:/usr/src/app/build/index.html:ro
+      - ./storage/app/dungeon-revealer-demo/overlay/dm-area.ba8ac6e2.js:/usr/src/app/build/assets/dm-area.ba8ac6e2.js:ro
+      - ./storage/app/dungeon-revealer-demo/overlay/is-dungeon-master-context.7308d038.js:/usr/src/app/build/assets/is-dungeon-master-context.7308d038.js:ro
+      - ./storage/app/dungeon-revealer-demo/overlay/map-view.5707b3e0.js:/usr/src/app/build/assets/map-view.5707b3e0.js:ro
+    command: ['node', 'ocf-server.cjs']
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: 2
+    stop_grace_period: 30s
+    healthcheck:
+      test: ['CMD', 'node', '-e', "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+  ocf-handler:
+    image: node:24-bookworm-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9
+    working_dir: /app
+    command: ['node', 'server.mjs']
+    env_file:
+      - ./storage/app/dungeon-revealer-demo/demo.env
+    environment:
+      DR_URL: http://dungeon-revealer:3000
+      OCF_DATA: /data
+    volumes:
+      - ./tools/ocf-handler:/app:ro
+      - ./storage/app/ocf-authoring/handler-config.json:/run/secrets/ocf-config.json:ro
+      - ocf-handler-data:/data
+    networks:
+      - default
+      - kanka_sources
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: 2
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+volumes:
+  dungeon-revealer-data:
+  ocf-handler-data:
+networks:
+  kanka_sources:
+    name: kenka-ocf-sources

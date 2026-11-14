@@ -47,3 +47,6 @@ test.json
 *.key
 __pycache__/
 *.log
+
+# Workstation-specific character extraction; private inputs/exports stay local.
+/docker/dungeon-revealer/regenerate-lux-sheet.py

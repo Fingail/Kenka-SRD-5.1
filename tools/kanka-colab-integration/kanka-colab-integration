@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+"""Manual, permission-aware Kanka downloads for Codex. Standard library only."""
+import argparse
+import hashlib
+import html
+import json
+import os
+from pathlib import Path
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+API_BASE = 'https://api.kanka.io/1.0'
+REPO = Path(__file__).resolve().parents[2]
+DEFAULT_WORKSPACE = REPO / 'storage/app/kanka-colab-integration'
+
+
+class IntegrationError(Exception):
+    pass
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, fp, code, msg, headers, newurl):
+        return None
+
+
+class KankaClient:
+    def __init__(self, token, interval=2.2):
+        if not token or any(c.isspace() for c in token):
+            raise IntegrationError('A valid token file or KANKA_TOKEN environment variable is required.')
+        self._token = token
+        self.interval = interval
+        self.last = 0
+        self.actor = None
+        self.opener = urllib.request.build_opener(NoRedirect())
+
+    def request(self, method, path, body=None):
+        if not path.startswith('/') or path.startswith('//') or '..' in path or '\\' in path:
+            raise IntegrationError('Invalid API path.')
+        time.sleep(max(0, self.interval - (time.monotonic() - self.last)))
+        headers = {'Accept': 'application/json', 'Authorization': 'Bearer ' + self._token,
+                   'User-Agent': 'kanka-colab-integration/0.1'}
+        data = None
+        if body is not None:
+            headers['Content-Type'] = 'application/json'
+            data = json.dumps(body).encode()
+        request = urllib.request.Request(API_BASE + path, data=data, headers=headers, method=method)
+        try:
+            with self.opener.open(request, timeout=45) as response:
+                result = json.load(response)
+        except urllib.error.HTTPError as error:
+            raise IntegrationError(f'Online API returned HTTP {error.code}; no automatic retry was made.') from None
+        except (urllib.error.URLError, TimeoutError, OSError):
+            raise IntegrationError('Online API connection failed; no automatic retry was made.') from None
+        finally:
+            self.last = time.monotonic()
+        return result
+
+    def get(self, path):
+        result = self.request('GET', path)
+        return result.get('data', result) if isinstance(result, dict) else result
+
+    def collection(self, path):
+        rows = []
+        visited = set()
+        while path:
+            if path in visited or len(visited) >= 100:
+                raise IntegrationError('Invalid or excessive API pagination.')
+            visited.add(path)
+            result = self.request('GET', path)
+            data = result.get('data', result) if isinstance(result, dict) else result
+            if not isinstance(data, list):
+                raise IntegrationError('Expected an API collection.')
+            rows.extend(data)
+            following = result.get('links', {}).get('next') if isinstance(result, dict) else None
+            if following:
+                if not following.startswith(API_BASE + '/'):
+                    raise IntegrationError('Refused pagination outside the official Kanka API.')
+                path = following[len(API_BASE):]
+            else:
+                path = None
+        return rows
+
+    def profile(self):
+        if self.actor is None:
+            self.actor = self.get('/profile')
+        return self.actor
+
+    def permissions(self, campaign, entities, action=1):
+        user_id = self.profile()['id']
+        result = self.request('POST', f'/campaigns/{campaign}/permissions/test',
+                              [{'user_id': user_id, 'entity_id': int(entity), 'action': action}
+                               for entity in entities])
+        rows = result.get('data', result) if isinstance(result, dict) else result
+        if not isinstance(rows, list):
+            raise IntegrationError('Unexpected permission-test response; access denied.')
+        return {int(row['entity_id']): row.get('can') in (True, 1, '1') for row in rows
+                if row.get('entity_id') is not None and int(row.get('action', 0)) == action
+                and int(row.get('user_id', -1)) == int(user_id)}
+
+
+def save_json(path, value):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(path.parent, 0o700)
+    temp = path.with_suffix(path.suffix + '.tmp')
+    with open(temp, 'w', encoding='utf-8') as file:
+        os.chmod(temp, 0o600)
+        json.dump(value, file, indent=2, ensure_ascii=False)
+        file.write('\n')
+    temp.replace(path)
+    os.chmod(path, 0o600)
+
+
+def load_json(path):
+    try:
+        return json.loads(Path(path).read_text())
+    except (OSError, ValueError):
+        raise IntegrationError('Missing or invalid private workspace configuration.') from None
+
+
+def parse_target(url):
+    match = re.fullmatch(r'https://app\.kanka\.io/w/([1-9]\d*)/entities/([1-9]\d*)/?', url)
+    if not match:
+        raise IntegrationError('Use an official https://app.kanka.io/w/CAMPAIGN/entities/ENTITY URL.')
+    return int(match[1]), int(match[2])
+
+
+def references(text, campaign):
+    text = text or ''
+    ids = {int(value) for value in re.findall(r'\[entity:(\d+)(?:\||\])', text)}
+    ids.update(int(value) for value in re.findall(r'data-entity-id=["\'](\d+)', text))
+    ids.update(int(value) for value in re.findall(rf'https://app\.kanka\.io/w/{campaign}/entities/(\d+)', text))
+    return ids
+
+
+def download(client, config, workspace, include=()):
+    campaign = int(config['campaign_id'])
+    entity_id = int(config['entity_id'])
+    base = f'/campaigns/{campaign}'
+    if not client.permissions(campaign, [entity_id]).get(entity_id):
+        raise IntegrationError('Online API read permission denied for the selected journal.')
+    root = client.get(base + f'/entities/{entity_id}')
+    module = root.get('module', {}).get('code')
+    if module != 'journal':
+        raise IntegrationError('The selected online resource is not a Journal; no snapshot was saved.')
+    articles = client.collection(base + f'/entities/{entity_id}/posts')
+    mentions = client.collection(base + f'/entities/{entity_id}/mentions')
+    relations = client.collection(base + f'/entities/{entity_id}/relations')
+    discovered = {}
+    def found(target, reason):
+        target = int(target)
+        if target != entity_id:
+            discovered.setdefault(str(target), set()).add(reason)
+    for target in references(root.get('child', {}).get('entry'), campaign):
+        found(target, 'journal description')
+    for post in articles:
+        for target in references(post.get('entry'), campaign):
+            found(target, 'article:' + str(post['id']))
+    for mention in mentions:
+        for key in ('entity_id', 'target_id'):
+            if mention.get(key):
+                found(mention[key], 'mention reference')
+    for relation in relations:
+        for key in ('owner_id', 'target_id'):
+            if relation.get(key):
+                found(relation[key], 'relationship')
+    selected = set(map(int, include))
+    if not selected <= set(map(int, discovered)):
+        raise IntegrationError('Linked downloads must be selected from discovered resource IDs.')
+    resources = {str(entity_id): root}
+    denied = []
+    if selected:
+        allowed = client.permissions(campaign, sorted(selected))
+        for target in sorted(selected):
+            if not allowed.get(target):
+                denied.append(target)
+                continue
+            resources[str(target)] = client.get(base + f'/entities/{target}')
+    snapshot = {'version': 1, 'campaign_id': campaign, 'root_entity_id': entity_id,
+                'downloaded_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                'root': root, 'articles': articles, 'mentions': mentions, 'relations': relations,
+                'resources': resources, 'discovered': {key: sorted(reasons) for key, reasons in sorted(discovered.items(), key=lambda x: int(x[0]))},
+                'denied_linked_ids': denied}
+    # Downloads and generated reading files never overwrite Codex's separate drafts.
+    save_json(Path(workspace) / 'snapshot.json', snapshot)
+    title = root['name']
+    sections = ['# ' + title, '', 'Source: ' + config['url'], '', '## Journal description', '',
+                root.get('child', {}).get('entry') or '(No description)', '']
+    for article in articles:
+        sections.extend(['## ' + article['name'], '', article.get('entry') or '', ''])
+    sections.extend(['## Discovered linked entries', '', *[f'- {key}: {", ".join(reasons)}' for key, reasons in snapshot['discovered'].items()], ''])
+    path = Path(workspace) / 'journal.md'
+    path.write_text('\n'.join(sections)); os.chmod(path, 0o600)
+    return {'journal': title, 'entity_id': entity_id, 'articles': len(articles),
+            'discovered_entries': len(discovered), 'downloaded_linked_entries': len(resources) - 1,
+            'denied_linked_entries': len(denied), 'online_writes': 0,
+            'workspace': str(workspace)}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog='kanka-colab-integration', description=__doc__)
+    parser.add_argument('--workspace', type=Path, default=DEFAULT_WORKSPACE)
+    commands = parser.add_subparsers(dest='command', required=True)
+    init = commands.add_parser('init', help='Configure a private, single-user connection.')
+    init.add_argument('url'); init.add_argument('--token-file', type=Path)
+    pull = commands.add_parser('pull', help='Download the selected Journal and its articles.')
+    pull.add_argument('--include', type=int, action='append', default=[], help='Also download a discovered linked entry; repeat as needed.')
+    commands.add_parser('status', help='Show local download status without accessing Kanka.')
+    args = parser.parse_args(argv)
+    workspace = args.workspace.expanduser().resolve()
+    os.umask(0o077)
+    if args.command == 'init':
+        campaign, entity = parse_target(args.url)
+        path = workspace / 'config.json'
+        if path.exists():
+            raise IntegrationError('Workspace already configured; choose another workspace to keep downloads separate.')
+        config = {'version': 1, 'url': args.url, 'campaign_id': campaign, 'entity_id': entity}
+        if args.token_file:
+            token_file = args.token_file.expanduser().resolve()
+            if not token_file.is_file():
+                raise IntegrationError('Token file does not exist.')
+            config['token_file'] = str(token_file)
+        save_json(path, config)
+        print(json.dumps({'configured': True, 'workspace': str(workspace), 'credentials_copied': False}))
+        return
+    config = load_json(workspace / 'config.json')
+    if args.command == 'status':
+        snap = load_json(workspace / 'snapshot.json')
+        print(json.dumps({'journal': snap['root']['name'], 'articles': len(snap['articles']),
+                          'discovered_entries': len(snap['discovered']), 'downloaded_at': snap['downloaded_at']}))
+        return
+    token = os.environ.get('KANKA_TOKEN', '')
+    if not token and config.get('token_file'):
+        try:
+            token = Path(config['token_file']).read_text().strip()
+        except OSError:
+            raise IntegrationError('Cannot read the private token file.') from None
+    result = download(KankaClient(token), config, workspace, args.include)
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except IntegrationError as error:
+        print('kanka-colab-integration: ' + str(error), file=sys.stderr)
+        sys.exit(1)

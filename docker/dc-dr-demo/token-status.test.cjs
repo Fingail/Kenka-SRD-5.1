@@ -1,0 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-only
+const test=require('node:test'),assert=require('node:assert/strict'),{health,condition}=require('./token-status.cjs');
+test('health captions change at the agreed 50%, 25% and zero boundaries',()=>{assert.equal(health(11,20).label,'Good');assert.equal(health(10,20).label,'Not Good');assert.equal(health(6,20).label,'Not Good');assert.equal(health(5,20).label,'Bad');assert.equal(health(0,20).label,'Down');assert.equal(health(-1,20).label,'Down');assert.equal(health(undefined,20).label,'Unknown');});
+test('condition labels retain native names and share a stable palette',()=>{assert.equal(condition({_id:'a',name:'Weakening Breath'}).name,'Weakening Breath');assert.notEqual(condition({name:'Poisoned'}).background,condition({name:'Weakening Breath'}).background);assert.equal(condition({name:'Unconscious'}).background,health(0,20).background);});

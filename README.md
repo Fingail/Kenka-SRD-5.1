@@ -40,6 +40,79 @@ vendor/bin/sail artisan setup:meilisearch --no-interaction
 
 The copy includes custom categories, native child records, properties, feature/spell attachments, relationships, pantheon memberships, tags and sidebar links. Its entry IDs and internal links are remapped. Generic icon files are shared. Keep the worker running to finish search indexing. Source-to-copy mappings stay in ignored `storage/app/campaign-copies/`. Private campaign snapshots and imported lore are not part of this repository.
 
+## Current tabletop deployment
+
+The maintained native tabletop is now in the private
+[Fingail/DCDR5e](https://github.com/Fingail/DCDR5e) repository, pinned here to
+commit `682c8bc`. It includes the 317-creature launcher catalog, selective native
+preparation, read-only Kanka identities/local mappings, quest templates and
+checkpoints. See the [current deployment handoff](docs/dcdr5e-current-deployment.md)
+for ownership, operation and validation. The demo sources below are historical;
+use the separate runtime for current tabletop work.
+
+## Dungeon Revealer combat integration
+
+The optional [DR/OCF encounter integration](docs/ocf-dr-integration-demo.md) reads GM-prepared characters, creatures and a quest from local Kanka. Kanka retains lore, rules and notes; the handler stores encounter HP, inventory use, effects, initiative and roll history in its own SQLite volume. Runtime Kanka access is **GET-only** and never writes combat results back.
+
+Start Kanka, create a working campaign and a view-only API token, then launch the separate demo:
+
+```bash
+# First launch only: enter the token without storing it in shell history.
+read -r -s -p "Local Kanka API token: " OCF_KANKA_TOKEN
+export OCF_KANKA_TOKEN
+python3 docker/dungeon-revealer/launch-integration.py
+unset OCF_KANKA_TOKEN
+```
+
+Open **http://127.0.0.1:18083/dm** as GM, **http://127.0.0.1:18083/** as player, or **http://127.0.0.1:18083/ocf-api/ui** to prepare/refresh a quest. Generated access details are in ignored `storage/app/dungeon-revealer-demo/access.json`; the API token stays in ignored `storage/app/ocf-authoring/handler-config.json`. Later launches reuse those files.
+
+The prototype currently allowlists **campaign 2**. Prepare its participant sheets and quest using the [input contract](docs/kanka-encounter-input-format.md); private workstation campaigns, maps, portraits and character exports are not bundled. PC definitions support reviewed JSON overrides; NPCs use Kanka properties/SRD compilation. Source refresh preserves runtime state.
+
+The integration provides:
+
+- One docked character sheet above the right-side combat log, independent popout controls, and token selection that reopens a closed sheet for both roles.
+- Targeted attacks, damage, healing, death saves, zero-HP token rotation, and GM-selected multi-target/save-based actions.
+- Shared initiative, player End turn, GM turn advancement, automatic GM selection of the next NPC, and a fresh roll queue for each battle.
+- Out-of-turn player rolls requiring DM approval and server-enforced player movement limited to the active PC.
+- Persistent named/custom effects, effect-save buttons with configured recovery on success, and GM effect controls.
+- Shared NPC attack/AoE results with dice badges, red/green natural d20 results, damage colors and health-after-action labels. Exact NPC HP and unrelated private rolls remain GM-only.
+- Small token names with health-colored backgrounds and separate colored effect labels beneath them.
+
+The handler uses pinned Open Character packages for supported calculations; it is not a complete 5e rules engine. Range, movement budgets, concentration, duration expiry and unsupported condition mechanics require GM adjudication. Native DR accounts use shared GM/player credentials, without individual character ownership. See [operations and verification](docs/ocf-dr-integration-demo.md) and [engineering handoff](engineering%20handoff.md).
+
+## Native DiceCloud tabletop
+
+Open **[Renovar — Native DiceCloud tabletop](http://127.0.0.1:18084/kanka-tabletop/)**. This now uses DiceCloud's own creature cards, selected-character action bar, targeting dialogs, dice controls and roll log. A small adapter embeds the DR map; Kanka supplies read-only source data and the quest link. Launch with `python3 docker/dc-dr-demo/launch-tabletop.py` after the existing private fixtures are prepared.
+
+The native interface now adds capital-I initiative requests, GM participant selection, queued PC/NPC rolls, automatic combat start after the final selected initiative roll and a shared turn tracker. Player out-of-turn actions require GM approval before dice open; movement is limited to the active PC. The feed has dock/pop-out and collapse/reopen chevrons; navigation uses a hamburger. Turn order floats over the map and can be dragged, minimized and resized. Native token/card health indicators share colours, zero-HP tokens rotate and recover upright when healed, and native roll logs highlight natural 1/20, hit/miss and health after actions. Map controls and their popouts use a dark grey right-hand rail. Select targets directly from map tokens or character cards. Duplicate conditions consolidate; status badges open floating details on click, while timed effect saves and source-defined recurring damage resolve automatically through the native engine. Portraits in the top and bottom bars open condensed, pinned floating sheets with native checks, saves, actions, spells and feature references. Sheets retain −/+ only for resources not yet integrated into gameplay. Hit-die rolls spend one die and heal; Lucky offers a pre-posting d20 choice and spends a point; Favored Foe can mark on an attack hit, track concentration and add its once-per-turn damage. Each sheet has a collapsible inventory that detaches, equips items and exposes defined use actions. The combat feed uses matching compact text. The top bar names and highlights the active PC, and End turn sits above turn order with ownership checks. A Dice roller dropdown at the bottom of each editable sheet supports multiple standard dice, a signed modifier and a floating pop-out. Whisper GM at the top of the sheet or in the roller keeps manual results private to the controlling player and GM. Downed PCs open private, tracked death saves from their card; actual HP may be negative. Healthy cards keep the coloured HP bar without a redundant Good badge. The earlier custom combat shell remains disabled. See [native tabletop operations](docs/dicecloud-dr-demo.md#native-dicecloud-interface-current-demo).
+
+The native tabletop also provides a [Map tools panel](docs/dicecloud-dr-demo.md#map-tools-ruler-and-shared-area-templates) with shared rulers, circle/cone/line/cube footprints, GM target overrides and per-map scale calibration (5 feet per square by default). Reviewed targets feed into DiceCloud actions. DR controls use the same compact dark theme; animations are deferred.
+
+## DiceCloud character advancement demo
+
+The current character-manager demo is [DiceCloud](docs/dicecloud-demo.md) at **http://127.0.0.1:18084**. Start it with `python3 docker/dicecloud-demo/launch.py`. It uses its own app/MongoDB containers, persistent volumes and local accounts; the private demo login is in ignored `storage/app/dicecloud-demo/access.json` after browser setup. The local test data includes a resolved hosted 2014 SRD library (10,182 entries with private dependency subtrees), alongside the small Fighter demo. Reviewed stale-reference repairs and native-schema validation prepare it for character creation and advancement testing. Outbound Kanka publication is not enabled. See the demo documentation for source limits, test results and conversion tools.
+
+
+The [guided Workshop](docs/dicecloud-demo.md#guided-workshop-and-vexus-2014-evaluation) at **http://127.0.0.1:18084/kanka-tabletop/workshop** adds creation, advancement previews, private drafts and reviewed history/rollback. A separate private Vexus 2014 core snapshot expands character options beyond the SRD; its documentation lists source selection, dependency repairs and disabled incomplete choices. Start the integrated demo with `python3 docker/dc-dr-demo/launch-tabletop.py`.
+
+A private Kanka character test bridge also exercises native Ranger advancement and creates a reusable campaign Satyr library. It preserves unresolved source choices for review; campaign data stays local. See [import workflow and limits](docs/dicecloud-demo.md#private-kanka-ranger-advancement-test).
+
+## Retired PCGen browser demo
+
+PCGen is stopped and its container, image and downloaded runtime have been removed. Its generated characters/settings are preserved locally, including a backup under `storage/app/pcgen-demo/preserved/`. DiceCloud now uses its former port. The following launcher and export documentation is retained for a deliberate later evaluation; stop DiceCloud before reusing port 18084.
+
+An optional, isolated PCGen desktop is available through a browser:
+
+```bash
+python3 docker/pcgen-demo/launch.py
+```
+
+Open **https://127.0.0.1:18084** and accept the local self-signed certificate. Read the generated username/password from ignored `storage/app/pcgen-demo/access.json`. The launcher verifies a pinned official Linux archive and starts one pinned Webtop container. Character files and exports persist under ignored `storage/app/pcgen-demo/config/Documents/PCGen/`. The [OCF export helper](docs/pcgen-character-export.md) reads Kanka to produce native character drafts/reference snapshots and separate battle JSON in quest folders. No Kanka token is mounted into PCGen, and exports never write back to Kanka or change live combat state.
+
+The selected PCGen build is a **nightly demonstration build**. Choose its **5e / System Reference Document 5.1** source and create a disposable SRD character to evaluate editing and exports. See [PCGen demo instructions](docs/pcgen-demo.md) for persistence, stop/start, licensing and integration boundaries.
+
+Both demos have dedicated Compose files and project names; the normal Kanka startup does not launch them. The optional [PlanarAlly comparison](docs/planarally-demo.md) is separate; MapTool has been retired.
+
 ## Default services
 
 All ten local runtime services start by default, including mail capture and realtime updates:
