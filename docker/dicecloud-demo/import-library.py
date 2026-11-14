@@ -5,6 +5,7 @@ import json
 import pathlib
 import subprocess
 import time
+import argparse
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 DATA = ROOT / 'storage/app/dicecloud-demo'
@@ -16,14 +17,19 @@ def run(args, **kwargs):
 
 
 def main():
-    payload = DATA / 'converted-srd-library.json'
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--data-dir', type=pathlib.Path, default=DATA)
+    parser.add_argument('--payload', type=pathlib.Path)
+    args = parser.parse_args()
+    data = args.data_dir.resolve()
+    payload = (args.payload or data / 'converted-srd-library.json').resolve()
     if not payload.exists():
         raise SystemExit('Run resolve-library.mjs and convert-library.py first.')
     container = run(COMPOSE + ['ps', '-q', 'dicecloud']).decode().strip()
     if not container:
         raise SystemExit('DiceCloud demo must be running.')
     timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    backup = DATA / f'before-srd-import-{timestamp}.archive.gz'
+    backup = data / f'before-library-import-{timestamp}.archive.gz'
     with backup.open('wb') as output:
         backup.chmod(0o600)
         result = subprocess.run(COMPOSE + ['exec', '-T', 'mongo', 'sh', '-c',
@@ -46,7 +52,7 @@ def main():
             result = subprocess.run(['docker', 'exec', container, 'cat', '/tmp/srd-import-report.json'], capture_output=True)
             if not result.returncode:
                 report = json.loads(result.stdout)
-                path = DATA / 'import-report.json'
+                path = data / 'import-report.json'
                 path.write_bytes(result.stdout); path.chmod(0o600)
                 print(json.dumps({k: v for k, v in report.items() if k != 'errors'}), flush=True)
                 if not report['passed']:

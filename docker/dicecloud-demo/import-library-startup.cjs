@@ -8,11 +8,19 @@ Meteor.startup(function () {
     const input = JSON.parse(fs.readFileSync('/tmp/converted-srd-library.json', 'utf8'));
     const Libraries = require('/imports/api/library/Libraries').default;
     const Nodes = require('/imports/api/library/LibraryNodes.ts').default;
+    const Collections = require('/imports/api/library/LibraryCollections').default;
     if (!Meteor.users.findOne(input.libraries[0].owner)) throw Error('Local owner not found');
     for (const lib of input.libraries) {
       if (Libraries.findOne(lib._id)) throw Error('Library already exists: ' + lib._id);
       const fields = Object.assign({}, lib); delete fields._id;
       Libraries.simpleSchema().validate(fields);
+    }
+    if (input.collection) {
+      if (Collections.findOne(input.collection._id)) throw Error('Collection already exists');
+      const fields = Object.assign({}, input.collection); delete fields._id;
+      Collections.simpleSchema().validate(fields);
+      const libraryIds = new Set(input.libraries.map(l => l._id));
+      if (input.collection.libraries.some(id => !libraryIds.has(id))) throw Error('Collection contains an unavailable library');
     }
     const nodeIds = new Set(input.nodes.map(n => n._id));
     const valid = [];
@@ -35,12 +43,13 @@ Meteor.startup(function () {
     try {
       input.libraries.forEach(lib => { Libraries.insert(lib); insertedLibraries.push(lib._id); });
       valid.forEach(node => { Nodes.insert(node); insertedNodes.push(node._id); });
+      if (input.collection) Collections.insert(input.collection);
     } catch (e) {
       insertedNodes.forEach(id => Nodes.remove(id));
       insertedLibraries.forEach(id => Libraries.remove(id));
       throw e;
     }
-    report.mainLibraryId = input.mainLibraryId; report.stage = 'complete'; report.passed = true;
+    report.mainLibraryId = input.mainLibraryId; report.collectionId = input.collection && input.collection._id; report.stage = 'complete'; report.passed = true;
   } catch (e) { report.error = String(e.message || e); }
   fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), { mode: 0o600 });
   console.log('SRD local import:', report.passed ? 'complete' : 'failed; inspect private report');

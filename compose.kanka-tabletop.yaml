@@ -25,6 +25,8 @@ services:
       - kanka-tabletop-data:/usr/src/app/data
       - ./docker/dc-dr-demo/dr-server.cjs:/usr/src/app/dc-dr-server.cjs:ro
       - ./docker/dc-dr-demo/native-map-bridge.js:/usr/src/app/native-map-bridge.js:ro
+      - ./docker/dc-dr-demo/native-vector-map.js:/usr/src/app/native-vector-map.js:ro
+      - ./docker/dc-dr-demo/vector-geometry.cjs:/usr/src/app/vector-geometry.cjs:ro
       - ./docker/dc-dr-demo/map-bridge.js:/usr/src/app/dc-dr-map-bridge.js:ro
       - ./storage/app/kanka-tabletop/overlay/index.html:/usr/src/app/build/index.html:ro
       - ./storage/app/kanka-tabletop/overlay/dm-area.ba8ac6e2.js:/usr/src/app/build/assets/dm-area.ba8ac6e2.js:ro

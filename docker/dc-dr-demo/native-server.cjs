@@ -28,7 +28,9 @@ Meteor.startup(async function () {
  const apply=mRequire('/imports/api/engine/action/functions/applyAction.ts').default;
  const replay=mRequire('/imports/api/engine/action/functions/userInput/getReplayChoicesInputProvider.ts').default;
  const installLuckyRollHook=fn=>{const previous=globalThis.diceLuckyRoll;globalThis.diceLuckyRoll=async(...args)=>{const result=await fn(...args);return result||(previous?previous(...args):args[2]);};};
- const write=mRequire('/imports/api/engine/action/functions/writeActionResults.ts').default;
+ const writeModule=mRequire('/imports/api/engine/action/functions/writeActionResults.ts');
+ require('/opt/dc-dr-assets/native-log-write.cjs')({Logs,writeModule,TaskResult:mRequire('/imports/api/engine/action/tasks/TaskResult.ts').default,toLog:mRequire('/imports/api/engine/action/functions/mutationToLogUpdates.ts').default});
+ const write=writeModule.default;
  const compute=mRequire('/imports/api/engine/computeCreature.ts').default;
  const roller=mRequire('/imports/api/engine/action/functions/userInput/getDeterministicDiceRoller.ts').default;
  const {renewDocIds,rebuildNestedSets}=mRequire('/imports/api/parenting/parentingFunctions.ts');
@@ -65,12 +67,13 @@ Meteor.startup(async function () {
  async function save(room){room.revision++;await R.updateAsync(room._id,{$set:{profiles:room.profiles,combat:room.combat,revision:room.revision,dead:room.dead||{},deaths:room.deaths||{}}});}
  async function defenses(profile,id){const rows=await props(id);for(const [key,value]of [['immunities',0],['resistances',0.5],['vulnerabilities',2]])for(const type of profile.template.damage_traits&&profile.template.damage_traits[key]||[]){const name=type+' '+key;if(!rows.some(p=>p.type==='damageMultiplier'&&p.name===name))await add(cfg.gmUserId,id,{type:'damageMultiplier',name,damageTypes:[type],value});}}
  async function advanced(profile,id){
-    const existingNames=new Set((await props(id)).filter(p=>p.type==='action').map(p=>p.name));
+    const existing=await props(id),rules=require('/opt/dc-dr-assets/native-advanced-actions.cjs');
     for(const effect of profile.template.advanced_actions||[]){
-     if(existingNames.has(effect.name))continue;
-     const damage=(effect.rolls||[]).find(r=>r.kind==='damage');
+     const linked=rules.linkedAttack(effect,profile.template.attacks),old=existing.find(p=>p.type==='action'&&p.name===effect.name);
+     if(old){if(linked){if(old.target!=='singleTarget'||!old.attackRoll?.calculation)await P.updateAsync(old._id,{$set:{target:'singleTarget',...(!old.attackRoll?.calculation?{attackRoll:{calculation:String(linked.attack_bonus)}}:{}),dirty:true}},{selector:{type:'action'}});if(!rules.hasDamage(existing,old._id)){const branch=await add(cfg.gmUserId,id,{type:'branch',name:'On hit',branchType:'hit'},old._id);await add(cfg.gmUserId,id,{type:'damage',name:effect.name+' damage',damageType:linked.damage_type,amount:{calculation:linked.damage},target:'target'},branch);}}continue;}
+     const damage=(effect.rolls||[]).find(r=>r.kind==='damage')||(linked?{formula:linked.damage,damage_type:linked.damage_type}:null);
      const ability=effect.save&&({str:'strength',dex:'dexterity',con:'constitution',int:'intelligence',wis:'wisdom',cha:'charisma'})[effect.save.ability];
-     const aid=await add(cfg.gmUserId,id,{type:'action',name:effect.name,actionType:effect.category==='legendary'?'free':'action',target:effect.area?'multipleTargets':effect.name==='Multiattack'?'singleTarget':'self',description:{text:(effect.description||'')+(effect.area?' Area: '+effect.area.size_ft+' ft '+effect.area.shape+'. Select all affected targets; geometry is GM-adjudicated.':'')}});
+     const aid=await add(cfg.gmUserId,id,{type:'action',name:effect.name,actionType:effect.category==='legendary'?'free':'action',target:effect.area?'multipleTargets':linked||effect.name==='Multiattack'?'singleTarget':'self',...(linked?{attackRoll:{calculation:String(linked.attack_bonus)}}:{}),description:{text:(effect.description||'')+(effect.area?' Area: '+effect.area.size_ft+' ft '+effect.area.shape+'. Select all affected targets; geometry is GM-adjudicated.':'')}});
      if(effect.name==='Multiattack'&&/one with its bite and two with its claws/i.test(effect.description||'')){
       for(const name of ['Bite','Claw','Claw']){const attack=(profile.template.attacks||[]).find(a=>a.name.toLowerCase()===name.toLowerCase());if(attack){const attackId=await add(cfg.gmUserId,id,{type:'action',name:attack.name,actionType:'attack',target:'singleTarget',attackRoll:{calculation:String(attack.attack_bonus)}},aid);await add(cfg.gmUserId,id,{type:'damage',name:attack.name+' damage',damageType:attack.damage_type,amount:{calculation:attack.damage},target:'target'},attackId);}}
      }
@@ -122,17 +125,26 @@ Meteor.startup(async function () {
   room.schemaVersion=4;await R.insertAsync(room);await event(room,'notice',{text:'Separate demo created. DiceCloud owns combat; the copied DR scene owns map state.'});return room;
  }
  if(cfg.mode==='native'){
+  const workshopNative={
+   LN:collection(mRequire('/imports/api/library/LibraryNodes.ts').default),Libraries:collection(mRequire('/imports/api/library/Libraries.js').default),
+   Experiences:collection(mRequire('/imports/api/creature/experience/Experiences.js').default),addExperience:mRequire('/imports/api/creature/experience/Experiences.js').insertExperienceForCreature,
+   defaultProperties:mRequire('/imports/api/creature/creatures/defaultCharacterProperties.js').default,
+   insertNode:mRequire('/imports/api/creature/creatureProperties/methods/insertPropertyFromLibraryNode.js').default,
+   slotFilter:mRequire('/imports/api/creature/creatureProperties/methods/getSlotFillFilter.js').default,
+   parse:mRequire('/imports/parser/parser.ts').parse,resolve:mRequire('/imports/parser/resolve.ts').default,
+   rebuildNestedSets,
+  };
   require('/opt/dc-dr-assets/native-action-privacy.cjs')({Meteor,C,T,R,EA,cfg});
   const ready=seed().then(async room=>{
    // Imported flat attacks need DiceCloud's native On Hit branch. Preserve
    // existing library branches; this is a one-time property-graph conversion.
-   for(const p of room.profiles){const rows=await props(p.creatureId);for(const h of rows.filter(x=>x.type==='attribute'&&x.variableName==='hitPoints'&&!x.ignoreLowerLimit))await P.updateAsync(h._id,{$set:{ignoreLowerLimit:true,dirty:true}},{selector:{type:'attribute'}});for(const patch of require('/opt/dc-dr-assets/native-ammo.cjs')(rows))await P.updateAsync(patch.id,{$set:{...patch.set,dirty:true}},{selector:{type:rows.find(x=>x._id===patch.id).type}});for(const attack of rows.filter(x=>x.type==='action'&&x.attackRoll&&x.attackRoll.calculation)){
+   for(const p of room.profiles){if(p.kind==='npc'){const source=cfg.profiles.find(c=>c.tokenId===p.tokenId);if(source?.template)await advanced(source,p.creatureId);}const rows=await props(p.creatureId);if(p.name==='Adult Gold Dragon'){const demo=require('/opt/dc-dr-assets/native-demo-heal.cjs');const old=rows.find(demo.available),definition=demo.property();if(!old)await add(p.ownerId,p.creatureId,definition);else if(old.target!==definition.target||old.description?.text!==definition.description.text)await P.updateAsync(old._id,{$set:{target:definition.target,description:definition.description,dirty:true}},{selector:{type:'action'}});}for(const h of rows.filter(x=>x.type==='attribute'&&x.variableName==='hitPoints'&&!x.ignoreLowerLimit))await P.updateAsync(h._id,{$set:{ignoreLowerLimit:true,dirty:true}},{selector:{type:'attribute'}});for(const patch of require('/opt/dc-dr-assets/native-ammo.cjs')(rows))await P.updateAsync(patch.id,{$set:{...patch.set,dirty:true}},{selector:{type:rows.find(x=>x._id===patch.id).type}});for(const attack of rows.filter(x=>x.type==='action'&&x.attackRoll&&x.attackRoll.calculation)){
     const children=rows.filter(x=>x.parentId===attack._id&&x.type==='damage');if(!children.length)continue;
     const branch=await add(p.ownerId,p.creatureId,{type:'branch',name:'On hit',branchType:'hit'},attack._id);
     await P.updateAsync({_id:{$in:children.map(x=>x._id)}},{$set:{parentId:branch,dirty:true}},{multi:true});
    }await native(()=>rebuildNestedSets(P,p.creatureId));await native(()=>compute(p.creatureId));}
    return room;
-  });require('/opt/dc-dr-assets/native-tabletop.cjs')({Meteor,Package,cfg,ready,context,combatDeps:{replay,clone,installLuckyRollHook,privateLogRouter,C,P,T,EA,Logs,props,native,apply,write,roller,Random,collection,db,liveBuffs,compute,add}});return;
+  });require('/opt/dc-dr-assets/native-tabletop.cjs')({Meteor,Package,cfg,ready,context,combatDeps:{workshopNative,replay,clone,installLuckyRollHook,privateLogRouter,C,P,V,T,EA,Logs,props,native,apply,write,roller,Random,collection,db,liveBuffs,compute,add}});return;
  }
  for(const method of ['actions.insertAction','actions.runAction']){
   const original=Meteor.server.method_handlers[method];

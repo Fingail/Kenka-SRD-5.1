@@ -9,7 +9,7 @@ BASE = pathlib.Path(__file__).resolve().parents[2] / 'storage/app/dicecloud-demo
 MAIN = 'hAQmc87ty6DbWwZ42'
 
 
-def convert(source, owner):
+def convert(source, owner, *, main=MAIN, namespace='dicecloud-srd-v1', label=None):
     nodes = source['nodes']
     missing = [n['_id'] for n in nodes.values() if n['type'] == 'reference'
                and n.get('ref', {}).get('collection') == 'libraryNodes'
@@ -17,7 +17,7 @@ def convert(source, owner):
     if missing:
         raise ValueError(f'{len(missing)} unresolved references; refusing import')
     roots = {n.get('root', {}).get('id') or n['ancestors'][0]['id'] for n in nodes.values()}
-    ids = {k: 'srd' + hashlib.sha256(('dicecloud-srd-v1:' + k).encode()).hexdigest()[:20]
+    ids = {k: ('srd' if namespace == 'dicecloud-srd-v1' else 'vx14') + hashlib.sha256((namespace + ':' + k).encode()).hexdigest()[:20]
            for k in set(nodes) | roots}
     if len(set(ids.values())) != len(ids):
         raise ValueError('ID collision')
@@ -41,7 +41,7 @@ def convert(source, owner):
         parent = original.get('parentId') or original.get('parent', {}).get('id')
         n['root'] = {'collection': 'libraries', 'id': ids[root]}
         # This wrapper is a single-source SRD selection. Remove only redundant sourcebook gates.
-        if root == MAIN and n.get('slotFillerCondition') in ['showSRD', '!showPHB']:
+        if namespace == 'dicecloud-srd-v1' and root == MAIN and n.get('slotFillerCondition') in ['showSRD', '!showPHB']:
             n.pop('slotFillerCondition', None)
             n.pop('slotFillerConditionNote', None)
         if parent in nodes:
@@ -82,10 +82,10 @@ def convert(source, owner):
     libraries = []
     for root in sorted(roots):
         original = source['libraries'][root]
-        libraries.append({'_id': ids[root], 'name': '2014 SRD — resolved test library' if root == MAIN else 'SRD dependency — ' + original['name'],
-                          'description': 'Private local test conversion from public DiceCloud library ' + root + '. Built and maintained by the Libraries of Vexus community. Underlying SRD 5.1 by Wizards of the Coast LLC: https://creativecommons.org/licenses/by/4.0/ . Source: https://dicecloud.com/library/' + root,
+        libraries.append({'_id': ids[root], 'name': (label if root == main else 'Vexus dependency — ' + original['name']) if label else ('2014 SRD — resolved test library' if root == MAIN else 'SRD dependency — ' + original['name']),
+                          'description': 'Private local conversion from public DiceCloud library ' + root + '. Built and maintained by the Libraries of Vexus community. Where included, SRD 5.1 material is by Wizards of the Coast LLC under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). This does not license community implementation or non-SRD sourcebook content; do not redistribute this downloaded pack. Source: https://dicecloud.com/library/' + root,
                           'owner': owner, 'public': False, 'readers': [], 'writers': []})
-    return {'mainLibraryId': ids[MAIN], 'libraries': libraries, 'nodes': converted, 'idMap': ids}
+    return {'mainLibraryId': ids[main], 'libraries': libraries, 'nodes': converted, 'idMap': ids}
 
 
 if __name__ == '__main__':

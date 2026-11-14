@@ -17,6 +17,7 @@ bootstrapServer(getEnv(process.env)).then(({app,httpServer})=>{
   }catch{return reply(res,503,{error:{message:'DiceCloud movement authorization unavailable.'}});}
  });
  router.get('/dc-dr-map-bridge.js',(req,res)=>{res.setHeader('Content-Type','application/javascript');res.setHeader('Cache-Control','no-store');res.end(fs.readFileSync(process.env.DC_DR_NATIVE==='1'?'/usr/src/app/native-map-bridge.js':'/usr/src/app/dc-dr-map-bridge.js','utf8').split('__DC_DR_ROUTE__').join(process.env.DC_DR_ROUTE||'/dc-dr'));});
+ router.get('/dc-dr-vector-map.js',(req,res)=>{res.setHeader('Content-Type','application/javascript');res.setHeader('Cache-Control','no-store');res.end(fs.readFileSync('/usr/src/app/vector-geometry.cjs','utf8')+'\n'+fs.readFileSync('/usr/src/app/native-vector-map.js','utf8'));});
  router.get(['/','/dm'],(req,res)=>serve(res,'text/html;charset=utf-8','/usr/src/app/build/index.html'));
  app.use(router);app._router.stack.unshift(app._router.stack.pop());httpServer.listen(Number(process.env.PORT||3000),'0.0.0.0');
 }).catch(e=>{console.error(e.message);process.exit(1);});

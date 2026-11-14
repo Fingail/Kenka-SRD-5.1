@@ -16,6 +16,15 @@ if not path.exists():
     cfg.pop('additionalConfigs',None)
     path.write_text(json.dumps(cfg,indent=2))
     path.chmod(0o600)
+# Keep the feed title tied to the imported quest rather than the tabletop label.
+cfg=json.loads(path.read_text())
+quest_path=path.parent/'quest-source.json'
+if quest_path.exists():
+    quest=json.loads(quest_path.read_text())
+    quest_name=quest.get('name') or quest.get('data',{}).get('name')
+    if quest_name and cfg.get('kanka',{}).get('questName')!=quest_name:
+        cfg.setdefault('kanka',{})['questName']=quest_name
+        path.write_text(json.dumps(cfg,indent=2))
 # Apply token defaults before native React reads its persisted tool state.
 subprocess.run(['python3','docker/dc-dr-demo/map-defaults.py'],cwd=ROOT,check=True)
 label_bundle=path.parent/'overlay/map-view.5707b3e0.js'
@@ -24,6 +33,13 @@ label_text=label_bundle.read_text()
 if not any(x in label_text for x in ['s*p.ratio/1395','s*p.ratio/465','s*p.ratio/700']):
     raise SystemExit('Pinned map label renderer changed; review before patching.')
 label_text=label_text.replace('s*p.ratio/1395','s*p.ratio/700').replace('s*p.ratio/465','s*p.ratio/700').replace('s*p.ratio/1860','s*p.ratio/1000').replace('s*p.ratio/620','s*p.ratio/1000')
+# Expose the native planar transform; overlays use the same image coordinates as tokens.
+vector_marker='k.exports.useEffect(()=>(l.controlRef&&(l.controlRef.current={controls:{center:'
+vector_hook='window.diceVectorScene={context:M,camera:m,size:g,mapId:l.map.id};'
+if vector_hook not in label_text:
+    if label_text.count(vector_marker)!=1:
+        raise SystemExit('Pinned map transform changed; review vector hook before patching.')
+    label_text=label_text.replace(vector_marker,vector_hook+vector_marker)
 movement='g=(k.exports.useContext(at)===!0||(f.isMovableByPlayers===!0&&(window.ocfCanMoveToken?.(l.id)??false)))&&f.isLocked===!1'
 if movement not in label_text:raise SystemExit('Pinned native token movement layout changed.')
 if movement+'&&!window.diceNativeTargeting' not in label_text:label_text=label_text.replace(movement,movement+'&&!window.diceNativeTargeting')
@@ -45,7 +61,7 @@ html=html.replace('<head>','<head>'+defaults_script);html_path.write_text(html)
 # The map adapter is mounted outside Meteor's compiled client bundle. Include
 # it in the deployment version so existing tabs receive Meteor's reload notice.
 client_hash=hashlib.sha256((label_text+dm_text+defaults_script).encode())
-for name in ['native-ui.js','native-map-bridge.js','native-tabletop.cjs','dr-server.cjs','native-combat.cjs','native-server.cjs','native-private-logs.cjs','native-action-privacy.cjs','native-combat-ui.js','patch-native-client.cjs','native-service-worker.js','token-status.cjs','token-poses.cjs','native-effects.cjs','native-resources.cjs','native-lucky.cjs','native-favored-foe.cjs','native-ammo.cjs','native-sheet-data.cjs','native-sheet-ui.js']:
+for name in ['native-server.cjs','native-log-write.cjs','native-vectors.cjs','vector-geometry.cjs','native-vector-map.js','native-vector-ui.js','native-ui.js','native-map-bridge.js','native-tabletop.cjs','native-workshop.cjs','native-workshop-rules.cjs','native-workshop-ui.js','dr-server.cjs','native-combat.cjs','native-server.cjs','native-advanced-actions.cjs','native-demo-heal.cjs','native-private-logs.cjs','native-action-privacy.cjs','native-combat-ui.js','native-log-layout.cjs','native-log-ui.js','patch-native-client.cjs','native-service-worker.js','token-status.cjs','token-poses.cjs','native-effects.cjs','native-resources.cjs','native-lucky.cjs','native-lucky-ui.js','native-favored-foe.cjs','native-ammo.cjs','native-sheet-data.cjs','native-sheet-ui.js']:
     client_hash.update(name.encode()+b'\0'+(ROOT/'docker/dc-dr-demo'/name).read_bytes())
 version_file=path.parent/'client-version.env'
 version_file.write_text('AUTOUPDATE_VERSION=native-map-'+client_hash.hexdigest()[:20]+'\n')

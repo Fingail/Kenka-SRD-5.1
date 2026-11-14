@@ -26,10 +26,8 @@ html.native-dr-tabletop{overflow:hidden!important;scrollbar-gutter:auto!importan
 .native-dr-tabletop .tabletop>.container>.d-flex.align-stretch>.pl-4 .theme--light,.native-dr-tabletop .tabletop>.container>.d-flex.align-stretch>.pl-4 .v-list-item__title,.native-dr-tabletop .tabletop>.container>.d-flex.align-stretch>.pl-4 .v-list-item__subtitle{color:#eee!important}
 .native-dr-tabletop .tabletop .v-footer{z-index:3;left:12px!important;right:calc(min(430px,40vw) + 12px)!important;bottom:12px!important;pointer-events:none}
 .native-dr-tabletop .tabletop .selected-creature-bar{pointer-events:auto;filter:drop-shadow(0 3px 8px #0004)}
-.native-dr-tabletop .native-kanka-map-link{position:absolute;top:185px;left:12px;z-index:2;background:#fff;padding:3px 7px;border-radius:4px;font:12px sans-serif}
 `;document.head.append(s);}
   frame=document.createElement('iframe');frame.id='native-dr-map';frame.title='Renovar — Dungeon Revealer map';Object.assign(frame.style,{width:'100%',height:'100%',border:'0'});frame.src=config.url;frame.onload=initialize;area.append(frame);
-  const link=document.createElement('a');link.className='native-kanka-map-link';link.href=config.kanka.questUrl;link.textContent='Kanka quest';link.target='_blank';link.rel='noopener';area.append(link);
  }finally{busy=false;}}
  setInterval(()=>attach().catch(()=>{}),500);
 })();

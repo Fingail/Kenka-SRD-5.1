@@ -53,6 +53,15 @@ class ConversionTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'unresolved'):
             converter.convert(source, 'owner')
 
+    def test_vexus_import_is_isolated_and_preserves_source_prerequisites(self):
+        source = self.fixture()
+        source['nodes']['base']['slotFillerCondition'] = 'showSRD'
+        old = converter.convert(source, 'owner')
+        new = converter.convert(source, 'owner', namespace='vexus-2014-v1', label='Vexus 2014')
+        self.assertFalse(set(old['idMap'].values()) & set(new['idMap'].values()))
+        self.assertEqual(new['libraries'][0]['name'], 'Vexus 2014')
+        self.assertEqual(next(n for n in new['nodes'] if n['_id'] == new['idMap']['base'])['slotFillerCondition'], 'showSRD')
+
     def test_cycle_refused(self):
         source = self.fixture(); source['nodes']['base']['parent']['id'] = 'stat'
         with self.assertRaisesRegex(ValueError, 'cycle'):
