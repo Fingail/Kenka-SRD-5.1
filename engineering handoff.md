@@ -327,3 +327,23 @@ Six geometry/API tests passed, covering roles, ownership, revisions, hidden/priv
 
 
 Map tools discovery now has an independent upper-right opener, rather than relying on the combat-feed header. The DR frame has a matching entry link, which forwards to the integrated tabletop when opened standalone. `/kanka-tabletop/?mapTools=1` redirects to the native table with `#map-tools`, forcing the panel open despite a saved closed preference. Combat-feed reopening sits below the independent opener and switches back to the feed on narrow screens, avoiding chevron overlap. Browser checks cover GM/player sessions with both panes initially collapsed, narrow-window placement, normal click-to-open/close and the forced-open entry link.
+## Current tabletop runtime handoff — 2026-11-09
+
+Current DiceCloud/DR implementation lives in private `Fingail/DCDR5e` at commit
+`682c8bc0cac39572580140da011bbc30998cf835`. This PR retains the earlier integration
+snapshot and documents the maintained engine rather than copying private runtime
+code/data into the Kanka fork. See docs/dcdr5e-current-deployment.md for the full
+catalog/selective import, hybrid identity resolution, encounter saves and native
+ownership boundaries. DCDR5e passed 343 native tests and its documented live
+acceptance checks. Kanka application code and deployment behavior are unchanged
+by this handoff update; unrelated race/rules-transfer work remains outside it.
+
+
+## Local source preservation — 2026-11-13
+
+This update preserves the local race/rules transfer planning commands, tests and
+legacy Workshop/vector/combat integration changes. These legacy files are not a
+replacement for the maintained private DCDR5e runtime. Current campaign storage,
+credentials, libraries and image assets remain excluded from Git. Focused race
+and rules resolver tests pass (8 tests, 54 assertions). Reboot preparation keeps
+all existing Kanka volumes and the currently running service set intact.
